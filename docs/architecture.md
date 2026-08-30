@@ -878,7 +878,7 @@ Five variables total, across both processes — kept deliberately small, with a 
 | `ConnectionStrings__DefaultConnection` | Backend | `Data Source=watchlist.db`, in `appsettings.json` | Not required to be set manually — the default already works for `dotnet run`. Documented as the override point because integration tests (see Testing Strategy) point this at a separate temp-file database instead of the one the app itself seeds and uses. |
 | `RateProvider__BaseUrl` | Backend | `https://api.frankfurter.dev`, in `appsettings.json` | Exists so `FrankfurterRateProvider`'s base URL isn't hardcoded in source. The concrete reason it matters: it's the override point for pointing integration tests at a local mock server instead of the real Frankfurter API, so tests don't depend on a live third-party service to pass. |
 | `Cors__AllowedOrigin` | Backend | `http://localhost:5173`, in `appsettings.json` | The CORS policy (see Backend Architecture) needs to know the frontend's exact origin. Making it configurable rather than hardcoded in `Program.cs` means the frontend's dev port and the backend's allowed origin are one value kept in sync via config, not the same magic string duplicated in two codebases that could silently drift apart. |
-| `VITE_API_BASE_URL` | Frontend (`.env`) | None — must be set | The one variable with no sensible built-in default, because the frontend genuinely has no way to know where the backend is running. Read via `import.meta.env.VITE_API_BASE_URL` in `api/client.ts` — the single place that knows the backend's address (see Frontend). Checked into `.env.development` as `http://localhost:5000` so `npm run dev` works without any manual setup step. |
+| `VITE_API_BASE_URL` | Frontend (`.env`) | None — must be set | The one variable with no sensible built-in default, because the frontend genuinely has no way to know where the backend is running. Read via `import.meta.env.VITE_API_BASE_URL` in `api/client.ts` — the single place that knows the backend's address (see Frontend). Checked into `.env.development` as `http://localhost:5009` (avoiding 5000, which macOS's AirPlay Receiver occupies by default) so `npm run dev` works without any manual setup step. |
 
 > **Assumption:** **What's deliberately absent is as informative as what's present.** No Frankfurter API key — the service requires no authentication at all, verified directly rather than assumed, so there's nothing to configure there. No database credentials — SQLite is a local file, not a networked service, so there's no username, password, or connection secret to manage the way a real Postgres deployment would need (see the enterprise diagram for where that reappears). No third-party configuration on the frontend at all — it never talks to Frankfurter directly (see Currency Validation), so it has no third-party surface to configure in the first place. And the currency-cache TTL, the ~5-second `HttpClient` timeout, and the single-retry policy are deliberately plain constants, not environment variables — they don't vary by environment at this scope, so making them configurable would be a knob nobody would ever actually turn.
 
@@ -894,7 +894,7 @@ Everything runs as two local processes talking over HTTP, plus one outbound call
 graph LR
   Browser["Browser"]
   SPA["React SPA (Vite + TS)\nnpm run dev :5173"]
-  API["ASP.NET Core Web API\n4-project solution, single process\ndotnet run :5000"]
+  API["ASP.NET Core Web API\n4-project solution, single process\ndotnet run :5009"]
   DB[("SQLite file\nwatchlist.db")]
   EXT[("api.frankfurter.dev/v2")]
 
