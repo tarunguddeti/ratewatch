@@ -1,6 +1,7 @@
 using CurrencyWatchlist.Api.Middleware;
 using CurrencyWatchlist.Application.RateProvider;
 using CurrencyWatchlist.Application.Repositories;
+using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Infrastructure.Persistence;
 using CurrencyWatchlist.Infrastructure.RateProviders;
 using CurrencyWatchlist.Infrastructure.Repositories;
@@ -29,6 +30,9 @@ builder.Services.AddScoped<IWatchlistRepository, WatchlistRepository>();
 builder.Services.AddScoped<IWatchlistItemRepository, WatchlistItemRepository>();
 builder.Services.AddScoped<IRateSnapshotRepository, RateSnapshotRepository>();
 builder.Services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
+
+builder.Services.AddScoped<WatchlistService>();
+builder.Services.AddScoped<WatchlistItemService>();
 
 // Typed HttpClient: FrankfurterRateProvider is the only place that knows Infrastructure talks
 // to a third party at all. ~5s timeout, single retry on transient failure is implemented

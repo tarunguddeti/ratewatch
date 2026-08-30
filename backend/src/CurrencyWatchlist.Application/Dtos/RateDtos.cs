@@ -1,5 +1,7 @@
 namespace CurrencyWatchlist.Application.Dtos;
 
+public record CurrencyDto(string Code, string Name);
+
 public record RateSnapshotDto(string BaseCurrency, string QuoteCurrency, decimal Rate, DateOnly SourceTimestamp, DateTime FetchedAt);
 
 public record FailedPairDto(string Pair, string Reason);
