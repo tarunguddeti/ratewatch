@@ -95,3 +95,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Exposes the top-level-statement Program class to CurrencyWatchlist.IntegrationTests'
+// WebApplicationFactory<Program> - internal by default, which the test project can't see
+// across an assembly boundary without this.
+public partial class Program;
