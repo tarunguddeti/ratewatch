@@ -34,6 +34,7 @@ builder.Services.AddScoped<IAlertRuleRepository, AlertRuleRepository>();
 builder.Services.AddScoped<WatchlistService>();
 builder.Services.AddScoped<WatchlistItemService>();
 builder.Services.AddScoped<RateService>();
+builder.Services.AddScoped<AlertService>();
 
 // Typed HttpClient: FrankfurterRateProvider is the only place that knows Infrastructure talks
 // to a third party at all. ~5s timeout, single retry on transient failure is implemented
