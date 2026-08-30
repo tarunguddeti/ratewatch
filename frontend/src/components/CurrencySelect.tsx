@@ -1,4 +1,5 @@
 import { useCurrencies } from "../hooks/useCurrencies";
+import styles from "./CurrencySelect.module.css";
 
 interface CurrencySelectProps {
   label: string;
@@ -15,9 +16,9 @@ export function CurrencySelect({ label, value, onChange }: CurrencySelectProps) 
 
   if (loading) {
     return (
-      <label>
+      <label className={styles.field}>
         {label}
-        <select disabled>
+        <select className={styles.select} disabled>
           <option>Loading currencies…</option>
         </select>
       </label>
@@ -26,9 +27,9 @@ export function CurrencySelect({ label, value, onChange }: CurrencySelectProps) 
 
   if (error) {
     return (
-      <div role="alert">
+      <div role="alert" className={styles.errorBox}>
         <span>Couldn't load currencies: {error.detail ?? error.title}</span>
-        <button type="button" onClick={() => void retry()}>
+        <button type="button" className="btn-secondary" onClick={() => void retry()}>
           Retry
         </button>
       </div>
@@ -36,9 +37,9 @@ export function CurrencySelect({ label, value, onChange }: CurrencySelectProps) 
   }
 
   return (
-    <label>
+    <label className={styles.field}>
       {label}
-      <select value={value} onChange={(e) => onChange(e.target.value)} required>
+      <select className={styles.select} value={value} onChange={(e) => onChange(e.target.value)} required>
         <option value="" disabled>
           Select a currency
         </option>

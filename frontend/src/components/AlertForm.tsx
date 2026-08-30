@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { ApiError } from "../api/client";
 import type { AlertCondition, WatchlistItemDetail } from "../types/domain";
+import styles from "./AlertForm.module.css";
 
 interface AlertFormProps {
   items: WatchlistItemDetail[];
@@ -32,8 +33,8 @@ export function AlertForm({ items, onCreate }: AlertFormProps) {
   };
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)}>
-      <label>
+    <form onSubmit={(e) => void handleSubmit(e)} className={styles.form}>
+      <label className={styles.field}>
         Pair
         <select value={watchlistItemId} onChange={(e) => setWatchlistItemId(e.target.value)} required>
           <option value="" disabled>
@@ -46,21 +47,25 @@ export function AlertForm({ items, onCreate }: AlertFormProps) {
           ))}
         </select>
       </label>
-      <label>
+      <label className={styles.conditionField}>
         Condition
         <select value={condition} onChange={(e) => setCondition(e.target.value as AlertCondition)}>
           <option value="Above">Above</option>
           <option value="Below">Below</option>
         </select>
       </label>
-      <label>
+      <label className={styles.thresholdField}>
         Threshold
         <input type="number" step="any" min="0.000001" value={threshold} onChange={(e) => setThreshold(e.target.value)} required />
       </label>
-      <button type="submit" disabled={submitting || !watchlistItemId || !threshold}>
+      <button type="submit" className={`btn-primary ${styles.submitButton}`} disabled={submitting || !watchlistItemId || !threshold}>
         {submitting ? "Creating…" : "Create Alert Rule"}
       </button>
-      {error && <p role="alert">{error.detail ?? error.title}</p>}
+      {error && (
+        <p role="alert" className={styles.error}>
+          {error.detail ?? error.title}
+        </p>
+      )}
     </form>
   );
 }

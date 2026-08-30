@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ratesApi } from "../api/rates";
 import type { ApiError } from "../api/client";
 import type { RefreshSummary } from "../types/domain";
+import styles from "./RefreshRatesButton.module.css";
 
 interface RefreshRatesButtonProps {
   onRefreshed: (summary: RefreshSummary) => void;
@@ -29,12 +30,21 @@ export function RefreshRatesButton({ onRefreshed }: RefreshRatesButtonProps) {
   };
 
   return (
-    <div>
-      <button type="button" onClick={() => void handleClick()} disabled={refreshing}>
+    <div className={styles.wrapper}>
+      <button
+        type="button"
+        className={`btn-secondary ${refreshing ? styles.refreshing : ""}`}
+        onClick={() => void handleClick()}
+        disabled={refreshing}
+      >
         {refreshing ? "Refreshing…" : "Refresh Rates"}
       </button>
-      <small> updates every currency pair across all your watchlists</small>
-      {error && <p role="alert">Refresh failed: {error.detail ?? error.title}</p>}
+      <small className={styles.caption}>updates every currency pair across all your watchlists</small>
+      {error && (
+        <p role="alert" className={styles.error}>
+          Refresh failed: {error.detail ?? error.title}
+        </p>
+      )}
     </div>
   );
 }

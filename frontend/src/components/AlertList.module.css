@@ -1,0 +1,57 @@
+.emptyState {
+  color: var(--color-text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.evaluateButton {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-primary);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-primary);
+  font-size: var(--text-sm);
+}
+
+.evaluateButton:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.evaluateButton:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}

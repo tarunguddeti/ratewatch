@@ -1,0 +1,25 @@
+.field {
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+/* The browser sizes a closed <select> to its widest <option> text by default (e.g. "Bosnia
+   and Herzegovina Convertible Mark"), which is exactly what pushed the submit button outside
+   the viewport before (FR-008). Capping width and letting the parent form wrap fixes it. */
+.select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.errorBox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}

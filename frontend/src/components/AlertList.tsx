@@ -2,6 +2,7 @@ import { useState } from "react";
 import { EvaluateResultBanner } from "./EvaluateResultBanner";
 import type { ApiError } from "../api/client";
 import type { AlertRule, EvaluateResult, WatchlistItemDetail } from "../types/domain";
+import styles from "./AlertList.module.css";
 
 interface AlertListProps {
   rules: AlertRule[];
@@ -34,19 +35,30 @@ export function AlertList({ rules, items, onEvaluate }: AlertListProps) {
   };
 
   if (rules.length === 0) {
-    return <p>No alert rules yet.</p>;
+    return <p className={styles.emptyState}>No alert rules yet.</p>;
   }
 
   return (
-    <ul>
+    <ul className={styles.list}>
       {rules.map((rule) => (
-        <li key={rule.id}>
-          {pairLabel(rule.watchlistItemId)} — {rule.condition} {rule.threshold}
-          <button type="button" onClick={() => void handleEvaluate(rule.id)} disabled={evaluating === rule.id}>
+        <li key={rule.id} className={styles.row}>
+          <span className={styles.label}>
+            {pairLabel(rule.watchlistItemId)} — {rule.condition} {rule.threshold}
+          </span>
+          <button
+            type="button"
+            className={styles.evaluateButton}
+            onClick={() => void handleEvaluate(rule.id)}
+            disabled={evaluating === rule.id}
+          >
             {evaluating === rule.id ? "Evaluating…" : "Evaluate Now"}
           </button>
           {results[rule.id] && <EvaluateResultBanner result={results[rule.id]} />}
-          {errors[rule.id] && <p role="alert">Evaluate failed: {errors[rule.id].detail ?? errors[rule.id].title}</p>}
+          {errors[rule.id] && (
+            <p role="alert" className={styles.error}>
+              Evaluate failed: {errors[rule.id].detail ?? errors[rule.id].title}
+            </p>
+          )}
         </li>
       ))}
     </ul>

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { CurrencySelect } from "./CurrencySelect";
 import type { ApiError } from "../api/client";
+import styles from "./CurrencyPairForm.module.css";
 
 interface CurrencyPairFormProps {
   onAdd: (baseCurrency: string, quoteCurrency: string) => Promise<void>;
@@ -32,13 +33,17 @@ export function CurrencyPairForm({ onAdd }: CurrencyPairFormProps) {
   };
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)}>
+    <form onSubmit={(e) => void handleSubmit(e)} className={styles.form}>
       <CurrencySelect label="Base currency" value={baseCurrency} onChange={setBaseCurrency} />
       <CurrencySelect label="Quote currency" value={quoteCurrency} onChange={setQuoteCurrency} />
-      <button type="submit" disabled={submitting || !baseCurrency || !quoteCurrency}>
+      <button type="submit" className={`btn-primary ${styles.submitButton}`} disabled={submitting || !baseCurrency || !quoteCurrency}>
         {submitting ? "Adding…" : "Add Currency Pair"}
       </button>
-      {error && <p role="alert">{error.detail ?? error.title}</p>}
+      {error && (
+        <p role="alert" className={styles.error}>
+          {error.detail ?? error.title}
+        </p>
+      )}
     </form>
   );
 }

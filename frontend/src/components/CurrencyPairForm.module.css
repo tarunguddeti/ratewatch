@@ -1,0 +1,23 @@
+/* flex-wrap is the actual fix for the observed clipping defect (FR-008): previously this row
+   had no wrapping behavior, so two <select> elements plus a submit button could exceed the
+   viewport width with the button pushed out of the visible/clickable area. */
+.form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.submitButton {
+  flex: 0 0 auto;
+}
+
+.error {
+  flex-basis: 100%;
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+  border: var(--border-width) solid var(--color-danger);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+}

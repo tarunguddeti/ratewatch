@@ -1,4 +1,5 @@
 import type { WatchlistItemDetail } from "../types/domain";
+import styles from "./RateTable.module.css";
 
 interface RateTableProps {
   items: WatchlistItemDetail[];
@@ -25,33 +26,41 @@ export function RateTable({ items, onRemoveItem, alertCountByItemId }: RateTable
   };
 
   if (items.length === 0) {
-    return <p>No currency pairs tracked yet - add one below.</p>;
+    return <p className={styles.emptyState}>No currency pairs tracked yet - add one below.</p>;
   }
 
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Pair</th>
-          <th>Latest Rate</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {items.map((item) => (
-          <tr key={item.id}>
-            <td>
-              {item.baseCurrency}/{item.quoteCurrency}
-            </td>
-            <td>{item.latestRate ? item.latestRate.rate : "Not fetched yet — click Refresh Rates"}</td>
-            <td>
-              <button type="button" onClick={() => handleRemove(item)}>
-                Remove
-              </button>
-            </td>
+    <div className={styles.tableWrapper}>
+      <table className={styles.table}>
+        <thead>
+          <tr>
+            <th>Pair</th>
+            <th>Latest Rate</th>
+            <th></th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td>
+                {item.baseCurrency}/{item.quoteCurrency}
+              </td>
+              <td>
+                {item.latestRate ? (
+                  item.latestRate.rate
+                ) : (
+                  <span className={styles.notFetched}>Not fetched yet — click Refresh Rates</span>
+                )}
+              </td>
+              <td>
+                <button type="button" className={styles.removeButton} onClick={() => handleRemove(item)}>
+                  Remove
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

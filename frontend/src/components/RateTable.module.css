@@ -1,0 +1,51 @@
+.emptyState {
+  color: var(--color-text-muted);
+}
+
+/* Scoped horizontal scroll on the table itself (never the page) as a safety net for narrow
+   viewports - keeps FR-008's "no page-level horizontal scroll" while still never truncating
+   data if a row ever needs more room than the viewport has. */
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+}
+
+.table th {
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.table td {
+  padding: var(--space-3);
+  border-bottom: var(--border-width) solid var(--color-border);
+  white-space: nowrap;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.notFetched {
+  color: var(--color-text-muted);
+}
+
+.removeButton {
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+.removeButton:hover {
+  background: var(--color-danger-bg);
+  border-color: var(--color-danger);
+}
