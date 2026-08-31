@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { useWatchlistDetail } from "../hooks/useWatchlistDetail";
 import { useAlerts } from "../hooks/useAlerts";
 import { CurrencyPairForm } from "../components/CurrencyPairForm";
@@ -19,20 +19,39 @@ export function WatchlistDetailPage() {
   const [selectedPair, setSelectedPair] = useState<WatchlistItemDetail | null>(null);
 
   if (loading) {
-    return <p className={styles.loading}>Loading watchlist…</p>;
+    return (
+      <main className={styles.page}>
+        <Link to="/" className={styles.backLink}>
+          ← Back to Watchlists
+        </Link>
+        <p className={styles.loading}>Loading watchlist…</p>
+      </main>
+    );
   }
 
   if (error) {
     if (error.status === 404) {
-      return <p className={styles.notFound}>This watchlist wasn't found - it may have been deleted.</p>;
+      return (
+        <main className={styles.page}>
+          <Link to="/" className={styles.backLink}>
+            ← Back to Watchlists
+          </Link>
+          <p className={styles.notFound}>This watchlist wasn't found - it may have been deleted.</p>
+        </main>
+      );
     }
     return (
-      <div role="alert" className={styles.errorBox}>
-        <p>Couldn't load this watchlist: {error.detail ?? error.title}</p>
-        <button type="button" className="btn-secondary" onClick={() => void refetch()}>
-          Retry
-        </button>
-      </div>
+      <main className={styles.page}>
+        <Link to="/" className={styles.backLink}>
+          ← Back to Watchlists
+        </Link>
+        <div role="alert" className={styles.errorBox}>
+          <p>Couldn't load this watchlist: {error.detail ?? error.title}</p>
+          <button type="button" className="btn-secondary" onClick={() => void refetch()}>
+            Retry
+          </button>
+        </div>
+      </main>
     );
   }
 
@@ -51,6 +70,10 @@ export function WatchlistDetailPage() {
 
   return (
     <main className={styles.page}>
+      <Link to="/" className={styles.backLink}>
+        ← Back to Watchlists
+      </Link>
+
       <div className={styles.header}>
         <h1>{data.name}</h1>
         <RefreshRatesButton onRefreshed={() => void refetch()} />

@@ -15,6 +15,21 @@
   gap: var(--space-3);
 }
 
+/* Sits above the header, first thing a user sees, so it's the obvious escape hatch back to
+   the overview - including (especially) from the not-found/error states below, where it's
+   the only way off an otherwise dead-end page. */
+.backLink {
+  align-self: flex-start;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  font-size: var(--text-sm);
+}
+
+.backLink:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
 .section {
   display: flex;
   flex-direction: column;

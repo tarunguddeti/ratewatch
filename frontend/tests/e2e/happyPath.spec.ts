@@ -42,4 +42,10 @@ test("create watchlist, add pair, refresh, see a rate, create alert, evaluate", 
   // Evaluate Now (FR-020) - triggered result renders for that row (FR-022).
   await page.getByRole("button", { name: "Evaluate Now" }).click();
   await expect(page.getByText(/Triggered: USD\/AUD is above 0\.01/)).toBeVisible({ timeout: 10_000 });
+
+  // Back to Watchlists - the escape hatch off the detail page, landing back where the
+  // watchlist created at the start of this test is still visible.
+  await page.getByRole("link", { name: /back to watchlists/i }).click();
+  await expect(page.getByRole("heading", { name: "Watchlists" })).toBeVisible();
+  await expect(page.getByRole("link", { name: watchlistName })).toBeVisible();
 });
