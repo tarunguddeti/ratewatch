@@ -74,7 +74,7 @@ public class RateService(
     /// <summary>FR-015 - proxied live, never touches RateSnapshot. Range validation
     /// (FR-016) happens at the controller boundary before this is ever called
     /// (contracts/api-contracts.md), so this method trusts its inputs.</summary>
-    public async Task<IReadOnlyList<RateSnapshotDto>> GetHistoryAsync(string baseCurrency, string quoteCurrency, DateOnly from, DateOnly to, CancellationToken ct)
+    public async Task<IReadOnlyList<RateHistoryPointDto>> GetHistoryAsync(string baseCurrency, string quoteCurrency, DateOnly from, DateOnly to, CancellationToken ct)
     {
         var result = await rateProvider.GetHistoryAsync(baseCurrency, quoteCurrency, from, to, ct);
 
@@ -92,7 +92,7 @@ public class RateService(
             throw new RateProviderUnavailableException("Could not reach the rate provider.");
         }
 
-        return result.Points!.Select(p => new RateSnapshotDto(baseCurrency, quoteCurrency, p.Rate, p.Date, DateTime.UtcNow)).ToList();
+        return result.Points!.Select(p => new RateHistoryPointDto(baseCurrency, quoteCurrency, p.Rate, p.Date, DateTime.UtcNow)).ToList();
     }
 
     private static string DescribeFailure(RateFailureReason reason) => reason switch

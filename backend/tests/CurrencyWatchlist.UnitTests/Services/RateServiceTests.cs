@@ -33,7 +33,7 @@ public class RateServiceTests
             .Setup(p => p.GetLatestRatesAsync("USD", It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[]
             {
-                RateResult.Ok(1.5m, DateOnly.FromDateTime(DateTime.UtcNow), "AUD"),
+                RateResult.Ok(1.5m, DateTime.UtcNow, "AUD"),
                 RateResult.Error(RateFailureReason.UnsupportedPair, "ZZZ"),
             });
 
@@ -41,7 +41,7 @@ public class RateServiceTests
 
         summary.Refreshed.Should().ContainSingle(r => r.QuoteCurrency == "AUD");
         summary.Failed.Should().ContainSingle(f => f.Pair == "USD/ZZZ");
-        _rateSnapshotRepo.Verify(r => r.UpsertAsync("USD", "AUD", 1.5m, It.IsAny<DateOnly>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+        _rateSnapshotRepo.Verify(r => r.UpsertAsync("USD", "AUD", 1.5m, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -58,12 +58,12 @@ public class RateServiceTests
             .Setup(p => p.GetLatestRatesAsync("USD", It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[]
             {
-                RateResult.Ok(1.5m, DateOnly.FromDateTime(DateTime.UtcNow), "AUD"),
-                RateResult.Ok(0.9m, DateOnly.FromDateTime(DateTime.UtcNow), "EUR"),
+                RateResult.Ok(1.5m, DateTime.UtcNow, "AUD"),
+                RateResult.Ok(0.9m, DateTime.UtcNow, "EUR"),
             });
 
         _rateSnapshotRepo
-            .Setup(r => r.UpsertAsync("USD", "AUD", It.IsAny<decimal>(), It.IsAny<DateOnly>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.UpsertAsync("USD", "AUD", It.IsAny<decimal>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("db locked"));
 
         var summary = await _sut.RefreshAllAsync(CancellationToken.None);

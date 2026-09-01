@@ -17,8 +17,9 @@ public class RateSnapshotConfiguration : IEntityTypeConfiguration<RateSnapshot>
         // constitution Article IV: decimal, never double, end to end.
         builder.Property(r => r.Rate).HasPrecision(MonetaryPrecision.Precision, MonetaryPrecision.Scale);
 
-        // Makes the upsert idempotent: a same-day refresh updates FetchedAt on the
-        // existing row instead of inserting a duplicate (data-model.md).
-        builder.HasIndex(r => new { r.BaseCurrency, r.QuoteCurrency, r.SourceTimestamp }).IsUnique();
+        // Exactly one row per pair, ever - not per pair per day. Makes the upsert idempotent
+        // regardless of when it last ran (data-model.md; docs/architecture.md's Rate Data:
+        // Latest vs. History decisions).
+        builder.HasIndex(r => new { r.BaseCurrency, r.QuoteCurrency }).IsUnique();
     }
 }

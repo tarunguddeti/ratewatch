@@ -51,7 +51,7 @@ public class AlertServiceTests
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RateResult.Ok(1.5m, DateOnly.FromDateTime(DateTime.UtcNow)));
+            .ReturnsAsync(RateResult.Ok(1.5m, DateTime.UtcNow));
 
         var result = await _sut.EvaluateAsync(rule.Id, CancellationToken.None);
 
@@ -70,7 +70,7 @@ public class AlertServiceTests
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RateResult.Ok(currentRate, DateOnly.FromDateTime(DateTime.UtcNow)));
+            .ReturnsAsync(RateResult.Ok(currentRate, DateTime.UtcNow));
 
         var result = await _sut.EvaluateAsync(rule.Id, CancellationToken.None);
 
@@ -87,12 +87,12 @@ public class AlertServiceTests
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(RateResult.Ok(1.5m, DateOnly.FromDateTime(DateTime.UtcNow)));
+            .ReturnsAsync(RateResult.Ok(1.5m, DateTime.UtcNow));
 
         await _sut.EvaluateAsync(rule.Id, CancellationToken.None);
 
         _rateSnapshotRepo.Verify(
-            r => r.UpsertAsync("USD", "AUD", 1.5m, It.IsAny<DateOnly>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
+            r => r.UpsertAsync("USD", "AUD", 1.5m, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -108,6 +108,6 @@ public class AlertServiceTests
         var act = () => _sut.EvaluateAsync(rule.Id, CancellationToken.None);
 
         await act.Should().ThrowAsync<RateProviderUnavailableException>();
-        _rateSnapshotRepo.Verify(r => r.UpsertAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<DateOnly>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
+        _rateSnapshotRepo.Verify(r => r.UpsertAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<decimal>(), It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

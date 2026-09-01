@@ -31,7 +31,7 @@ public class RatesController(RateService rateService) : ControllerBase
     /// IValidatableObject.Validate() (Api/Requests/HistoryQuery.cs). Defaults to the last 30
     /// days when no range is specified (FR-015), applied by HistoryQuery.EffectiveFrom/To.</summary>
     [HttpGet("history")]
-    public async Task<ActionResult<IReadOnlyList<RateSnapshotDto>>> GetHistory(
+    public async Task<ActionResult<IReadOnlyList<RateHistoryPointDto>>> GetHistory(
         [FromQuery] string @base, [FromQuery] string quote, [FromQuery] HistoryQuery query, CancellationToken ct)
     {
         var history = await rateService.GetHistoryAsync(@base.ToUpperInvariant(), quote.ToUpperInvariant(), query.EffectiveFrom, query.EffectiveTo, ct);

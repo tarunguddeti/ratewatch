@@ -23,10 +23,10 @@ public record RateResult
     public string? Quote { get; private init; }
 
     public decimal Rate { get; private init; }
-    public DateOnly SourceTimestamp { get; private init; }
+    public DateTime SourceTimestamp { get; private init; }
     public RateFailureReason? FailureReason { get; private init; }
 
-    public static RateResult Ok(decimal rate, DateOnly sourceTimestamp, string? quote = null) =>
+    public static RateResult Ok(decimal rate, DateTime sourceTimestamp, string? quote = null) =>
         new() { IsSuccess = true, Rate = rate, SourceTimestamp = sourceTimestamp, Quote = quote };
 
     public static RateResult Error(RateFailureReason reason, string? quote = null) =>

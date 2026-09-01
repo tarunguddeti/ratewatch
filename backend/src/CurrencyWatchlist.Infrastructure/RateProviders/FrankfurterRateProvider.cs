@@ -55,7 +55,10 @@ public class FrankfurterRateProvider : IRateProvider
                 var match = rates!.FirstOrDefault(r => string.Equals(r.Quote, q, StringComparison.OrdinalIgnoreCase));
                 return match is null
                     ? RateResult.Error(RateFailureReason.UnsupportedPair, q)
-                    : RateResult.Ok(match.Rate, match.Date, q);
+                    // Frankfurter's "date" field never carries a time-of-day, so this normalizes
+                    // to midnight UTC on that date rather than fabricating precision the source
+                    // never provided (specs/005-ratesnapshot-cache-cleanup/research.md Decision 3).
+                    : RateResult.Ok(match.Rate, match.Date.ToDateTime(TimeOnly.MinValue), q);
             })
             .ToList();
     }

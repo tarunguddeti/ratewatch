@@ -69,7 +69,7 @@ public class WatchlistServiceTests
         var watchlist = new Watchlist { Id = Guid.NewGuid(), Name = "Travel Fund", Items = { item } };
         _watchlistRepo.Setup(r => r.GetByIdAsync(watchlist.Id, It.IsAny<CancellationToken>())).ReturnsAsync(watchlist);
 
-        var snapshot = new RateSnapshot { BaseCurrency = "USD", QuoteCurrency = "AUD", Rate = 1.5m, SourceTimestamp = DateOnly.FromDateTime(DateTime.UtcNow) };
+        var snapshot = new RateSnapshot { BaseCurrency = "USD", QuoteCurrency = "AUD", Rate = 1.5m, SourceTimestamp = DateTime.UtcNow };
         _rateSnapshotRepo
             .Setup(r => r.GetLatestForPairsAsync(It.IsAny<IEnumerable<(string, string)>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<(string, string), RateSnapshot> { [("USD", "AUD")] = snapshot });

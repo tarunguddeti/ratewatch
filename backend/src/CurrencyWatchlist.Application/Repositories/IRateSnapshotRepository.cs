@@ -13,6 +13,7 @@ public interface IRateSnapshotRepository
 
     /// <summary>Single atomic INSERT ... ON CONFLICT DO UPDATE, never a check-then-insert
     /// sequence (constitution Article IV) - closes the double-click/two-tab race on the
-    /// (BaseCurrency, QuoteCurrency, SourceTimestamp) unique index.</summary>
-    Task UpsertAsync(string baseCurrency, string quoteCurrency, decimal rate, DateOnly sourceTimestamp, DateTime fetchedAt, CancellationToken ct);
+    /// (BaseCurrency, QuoteCurrency) unique index. Idempotent regardless of when it last ran -
+    /// there is exactly one row per pair, ever.</summary>
+    Task UpsertAsync(string baseCurrency, string quoteCurrency, decimal rate, DateTime sourceTimestamp, DateTime fetchedAt, CancellationToken ct);
 }

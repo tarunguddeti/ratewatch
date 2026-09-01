@@ -582,7 +582,7 @@ sequenceDiagram
     FE->>C: GET /api/rates/latest?base=&quote=
     C->>S: GetLatestAsync(base, quote)
     S->>Repo: GetLatestAsync(base, quote)
-    Repo->>DB: SELECT ... ORDER BY SourceTimestamp DESC LIMIT 1
+    Repo->>DB: SELECT ... WHERE BaseCurrency=? AND QuoteCurrency=?
     alt no snapshot yet
         DB-->>Repo: no rows
         Repo-->>S: null
@@ -968,7 +968,7 @@ The technical sections above describe what this system does. This section is ent
 
 *Referenced from: Data Model*
 
-> **Decision:** RateSnapshot has no WatchlistId, matching the schema given in the brief. Two watchlists both tracking USD→AUD share the same cached row rather than duplicating it. A unique index on `(BaseCurrency, QuoteCurrency, SourceTimestamp)` keeps a refresh idempotent — re-running it the same day updates `FetchedAt` on the existing row instead of inserting a duplicate.
+> **Decision:** RateSnapshot has no WatchlistId, matching the schema given in the brief. Two watchlists both tracking USD→AUD share the same cached row rather than duplicating it. A unique index on `(BaseCurrency, QuoteCurrency)` — deliberately excluding `SourceTimestamp` — keeps exactly one row per pair, ever. A refresh is idempotent regardless of when it last ran: today's, yesterday's, or a week-old refresh all resolve to the same `ON CONFLICT` target and update that single row's `Rate`/`FetchedAt` in place, rather than accumulating a new row per calendar day. Full reasoning under Decisions & Tradeoffs → Rate Data: Latest vs. History.
 
 > **Decision:** A unique constraint on `WatchlistItem(WatchlistId, BaseCurrency, QuoteCurrency)` stops the same pair being added twice to one watchlist — not stated in the brief, but a silent duplicate-pair bug is worse than a 409 on a repeat POST.
 
@@ -989,6 +989,12 @@ The technical sections above describe what this system does. This section is ent
 > **Decision:** **RateSnapshot's role narrowed after migrating to Frankfurter's v2 API. It originally accumulated day-by-day as the sole source of rate history; now it's purely a latest-rate cache** — what powers `GET /api/rates/latest` and the watchlist-detail join without hitting the external API on every page load. `GET /api/rates/history` no longer reads it at all; v2 exposes a native date-range time series, so history is proxied live instead of depending on how many times "Refresh Rates" happened to be clicked in the past.
 >
 > **This is a narrowing, not an elimination — the table stays, on three grounds.** It's a named, required entity in the brief's own Core Entities list, not something invented for this design to later remove at will. Functionally, `GET /api/rates/latest` and the watchlist-detail join still need a way to answer "what's the latest rate" without a live call on every page view, and refresh/evaluate still write into it as a side effect of fetching live. And without it, "Refresh Rates" would stop meaning anything — if reads were always live anyway, there'd be nothing left for the button to actually update.
+
+> **Decision:** **The narrowing is enforced at the schema level: the unique index is `(BaseCurrency, QuoteCurrency)`, not `(BaseCurrency, QuoteCurrency, SourceTimestamp)`.** An earlier version of this design included `SourceTimestamp` in the key, which — while still idempotent within a single day — let the table quietly accumulate one row per pair per calendar day forever, a de facto local history table existing alongside the "purely a latest-rate cache" framing above. That's a contradiction worth resolving rather than leaving implicit: a table described as a cache should hold exactly what a cache holds — one entry per key.
+>
+> Dropping `SourceTimestamp` from the key isn't a loss, because nothing was ever built to read that accumulated history. `GET /api/rates/history` already owns the history responsibility entirely, and does it better than `RateSnapshot` ever could: it proxies Frankfurter's native time-series live, which means correct history for any date range — including dates before this pair was ever added to a watchlist — rather than only the days someone happened to click "Refresh Rates." A day-grained `RateSnapshot` would have been a second, strictly worse copy of data the history endpoint already serves on demand: bounded to whatever refreshes actually happened, with gaps on any day nobody clicked the button, and read by nothing. Collapsing to `(BaseCurrency, QuoteCurrency)` makes the table's size bounded by the number of distinct pairs ever tracked — not by how long the app has been running — and makes both read paths (`GetLatestAsync`, and the batched `GetLatestForPairsAsync` behind the watchlist-detail join) a direct lookup by pair instead of a "find the newest of possibly-many rows" query.
+>
+> This also settles a related question worth recording here: given Frankfurter serves *daily* reference rates (not a live/intraday feed — the source itself only changes once a day), a locally cached rate between refreshes is never less accurate than a live call would be, only potentially a refresh cycle behind. That's what makes the cache-and-manual-refresh model correct rather than a compromise: there is no live-tick data being sacrificed by not calling Frankfurter on every read.
 
 > **Tradeoff:** **`GET /api/rates/history` proxies live to Frankfurter's v2 time-series endpoint instead of reading locally accumulated `RateSnapshot` rows.** The upside is real: a pair added five minutes ago shows a genuine multi-day chart immediately, rather than a flat line until enough manual refreshes accumulate. The cost is real too — the history endpoint's availability is now tied to Frankfurter's uptime at the moment someone views the chart, not just at refresh time; if the provider is down, the chart fails with a `502` rather than showing whatever was locally cached. Chosen deliberately: for a system whose whole purpose is displaying rate history, richer data immediately outweighs surviving a provider outage that `RateSnapshot`-as-cache still protects `/api/rates/latest` against regardless.
 
@@ -1090,7 +1096,7 @@ foreach (var result in fetchedResults)
 }
 ```
 
-> **Decision:** **The `RateSnapshot` upsert is one atomic SQL statement, not a check-then-insert pattern in C#.** Two refresh requests racing on the same `(BaseCurrency, QuoteCurrency, SourceTimestamp)` key — a double-clicked button, two open tabs — is a genuine race if written as "query for an existing row, then decide whether to insert or update": both requests can see "no row yet" before either one commits. SQLite supports `INSERT ... ON CONFLICT(...) DO UPDATE` natively, so the upsert is expressed as a single indivisible statement instead.
+> **Decision:** **The `RateSnapshot` upsert is one atomic SQL statement, not a check-then-insert pattern in C#.** Two refresh requests racing on the same `(BaseCurrency, QuoteCurrency)` key — a double-clicked button, two open tabs — is a genuine race if written as "query for an existing row, then decide whether to insert or update": both requests can see "no row yet" before either one commits. SQLite supports `INSERT ... ON CONFLICT(...) DO UPDATE` natively, so the upsert is expressed as a single indivisible statement instead.
 
 > **Tradeoff:** A partially-failed refresh returns `200` with a `failed[]` list rather than a `207` or a thrown error — simpler for the frontend to render ("3 of 4 pairs updated") than branching on an unusual status code for a take-home-scale client.
 
