@@ -51,6 +51,14 @@ body {
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Without this, clicking any non-interactive text (headings, labels) drops a
+     text-selection caret there, which reads as a UI bug. */
+  user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
 }
 
 h1,
