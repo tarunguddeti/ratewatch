@@ -7,14 +7,10 @@ namespace CurrencyWatchlist.Application.Services;
 
 public class WatchlistService(IWatchlistRepository watchlistRepo, IRateSnapshotRepository rateSnapshotRepo)
 {
-    /// <summary>FR-001 - blank/invalid names are rejected and nothing is created.</summary>
+    /// <summary>FR-001 - blank/invalid names are rejected before this method ever runs, via
+    /// [Required] on CreateWatchlistRequest.Name (Api/Requests/WatchlistRequests.cs).</summary>
     public async Task<WatchlistDto> CreateAsync(string name, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ValidationException("Watchlist name is required.");
-        }
-
         var watchlist = new Watchlist
         {
             Id = Guid.NewGuid(),

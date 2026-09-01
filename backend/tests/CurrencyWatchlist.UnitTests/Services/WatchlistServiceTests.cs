@@ -18,18 +18,6 @@ public class WatchlistServiceTests
         _sut = new WatchlistService(_watchlistRepo.Object, _rateSnapshotRepo.Object);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public async Task CreateAsync_BlankName_ThrowsValidationException(string? name)
-    {
-        var act = () => _sut.CreateAsync(name!, CancellationToken.None);
-
-        await act.Should().ThrowAsync<ValidationException>();
-        _watchlistRepo.Verify(r => r.AddAsync(It.IsAny<Watchlist>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
     [Fact]
     public async Task CreateAsync_ValidName_PersistsAndReturnsDto()
     {

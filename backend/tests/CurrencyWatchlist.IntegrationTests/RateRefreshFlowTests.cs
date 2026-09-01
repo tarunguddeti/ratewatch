@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using CurrencyWatchlist.Api.Requests;
 using CurrencyWatchlist.Application.Dtos;
 using FluentAssertions;
 

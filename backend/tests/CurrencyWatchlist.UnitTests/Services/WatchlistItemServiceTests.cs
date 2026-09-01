@@ -35,18 +35,6 @@ public class WatchlistItemServiceTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
-    [Theory]
-    [InlineData("US", "AUD")]
-    [InlineData("USD", "AU1")]
-    [InlineData("", "AUD")]
-    public async Task AddItemAsync_MalformedCode_ThrowsValidationException(string baseCurrency, string quoteCurrency)
-    {
-        var act = () => _sut.AddItemAsync(_watchlist.Id, baseCurrency, quoteCurrency, CancellationToken.None);
-
-        await act.Should().ThrowAsync<ValidationException>();
-        _rateProvider.Verify(p => p.GetSupportedCurrenciesAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
     [Fact]
     public async Task AddItemAsync_BaseEqualsQuote_ThrowsValidationException()
     {

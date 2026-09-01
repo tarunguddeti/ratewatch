@@ -5,6 +5,7 @@ using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Infrastructure.Persistence;
 using CurrencyWatchlist.Infrastructure.RateProviders;
 using CurrencyWatchlist.Infrastructure.Repositories;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,38 @@ builder.Logging.AddSimpleConsole(options => options.IncludeScopes = true);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
+{
+    // The default factory leaves Detail unset and Title generic ("One or more validation
+    // errors occurred."), which would replace today's specific per-field messages (e.g.
+    // "Watchlist name is required.") with that generic sentence everywhere a component reads
+    // error.detail ?? error.title. Keep Errors (the frontend's ApiError.fieldErrors already
+    // parses it - docs/architecture.md's Frontend error shape) but add a specific Detail on
+    // top, additive to the automatic shape rather than replacing it
+    // (specs/003-dataannotations-validation/research.md decision 6).
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        // Distinct() because a single IValidatableObject failure attached to more than one
+        // member (e.g. HistoryQuery's range-too-large check, tagged on both From and To) is
+        // grouped by ModelState under each member it names - without this, its message would
+        // repeat once per member instead of appearing once.
+        var detail = string.Join(" ", context.ModelState.Values
+            .SelectMany(entry => entry.Errors)
+            .Select(error => error.ErrorMessage)
+            .Distinct());
+
+        var problemDetails = new ValidationProblemDetails(context.ModelState)
+        {
+            Status = StatusCodes.Status400BadRequest,
+            Detail = detail,
+        };
+
+        return new BadRequestObjectResult(problemDetails)
+        {
+            ContentTypes = { "application/problem+json" },
+        };
+    };
+});
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

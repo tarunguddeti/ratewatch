@@ -21,6 +21,11 @@ public class FakeFrankfurterHandler : HttpMessageHandler
 
     public bool SimulateUnavailable { get; set; }
 
+    /// <summary>How many times /currencies has been served - lets a test assert "the provider
+    /// was never called" for a request that should be rejected before reaching this handler
+    /// (specs/003-dataannotations-validation/quickstart.md Step 2, SC-002).</summary>
+    public int CurrenciesCallCount { get; private set; }
+
     private static readonly IReadOnlyDictionary<string, string> SupportedCurrencies = new Dictionary<string, string>
     {
         ["USD"] = "US Dollar",
@@ -43,6 +48,7 @@ public class FakeFrankfurterHandler : HttpMessageHandler
 
         if (path.EndsWith("/currencies"))
         {
+            CurrenciesCallCount++;
             var body = SupportedCurrencies.Select(c => new { iso_code = c.Key, name = c.Value });
             return Task.FromResult(JsonResponse(HttpStatusCode.OK, body));
         }

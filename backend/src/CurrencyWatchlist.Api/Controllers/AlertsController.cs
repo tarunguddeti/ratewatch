@@ -1,3 +1,4 @@
+using CurrencyWatchlist.Api.Requests;
 using CurrencyWatchlist.Application.Dtos;
 using CurrencyWatchlist.Application.Services;
 using Microsoft.AspNetCore.Mvc;

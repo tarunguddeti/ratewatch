@@ -1,5 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
+using CurrencyWatchlist.Api.Requests;
 using CurrencyWatchlist.Application.Dtos;
 using FluentAssertions;
 
@@ -81,5 +83,37 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
 
         aboveResult!.Triggered.Should().BeTrue();
         belowResult!.Triggered.Should().BeFalse();
+    }
+
+    // Shape-check rejections (specs/003-dataannotations-validation - User Story 1).
+
+    [Fact]
+    public async Task CreateAlert_InvalidCondition_Returns400WithSpecificDetail()
+    {
+        var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
+
+        var response = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Sideways", 1.5m));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var detail = body.GetProperty("detail").GetString();
+        detail.Should().NotBeNullOrWhiteSpace();
+        detail.Should().NotBe("One or more validation errors occurred.");
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task CreateAlert_NonPositiveThreshold_Returns400WithSpecificDetail(decimal threshold)
+    {
+        var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
+
+        var response = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Above", threshold));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var detail = body.GetProperty("detail").GetString();
+        detail.Should().NotBeNullOrWhiteSpace();
+        detail.Should().NotBe("One or more validation errors occurred.");
     }
 }

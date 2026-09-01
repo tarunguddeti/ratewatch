@@ -12,21 +12,13 @@ public class AlertService(
     IRateSnapshotRepository rateSnapshotRepo,
     IRateProvider rateProvider)
 {
-    /// <summary>FR-017 - condition + positive threshold; 404 if the watchlist item doesn't
-    /// exist. No restriction on multiple rules per item, including opposing conditions
-    /// (FR-018) - a second rule on the same pair is just another row.</summary>
+    /// <summary>FR-017 - condition + positive threshold checked before this method ever runs,
+    /// via [AllowedValues] and [Range] on CreateAlertRuleRequest (Api/Requests/AlertRequests.cs);
+    /// 404 if the watchlist item doesn't exist. No restriction on multiple rules per item,
+    /// including opposing conditions (FR-018) - a second rule on the same pair is just another
+    /// row.</summary>
     public async Task<AlertRuleDto> CreateAsync(Guid watchlistItemId, string condition, decimal threshold, CancellationToken ct)
     {
-        if (condition is not ("Above" or "Below"))
-        {
-            throw new ValidationException("Condition must be 'Above' or 'Below'.");
-        }
-
-        if (threshold <= 0)
-        {
-            throw new ValidationException("Threshold must be a positive value.");
-        }
-
         _ = await itemRepo.GetByIdAsync(watchlistItemId, ct)
             ?? throw new NotFoundException("Watchlist item not found.");
 

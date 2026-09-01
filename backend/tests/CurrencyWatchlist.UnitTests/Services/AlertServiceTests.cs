@@ -32,24 +32,6 @@ public class AlertServiceTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    public async Task CreateAsync_NonPositiveThreshold_ThrowsValidationException(decimal threshold)
-    {
-        var act = () => _sut.CreateAsync(_item.Id, "Above", threshold, CancellationToken.None);
-
-        await act.Should().ThrowAsync<ValidationException>();
-    }
-
-    [Fact]
-    public async Task CreateAsync_InvalidCondition_ThrowsValidationException()
-    {
-        var act = () => _sut.CreateAsync(_item.Id, "Sideways", 1.5m, CancellationToken.None);
-
-        await act.Should().ThrowAsync<ValidationException>();
-    }
-
     [Fact]
     public async Task EvaluateAsync_RuleNotFound_ThrowsNotFoundException()
     {

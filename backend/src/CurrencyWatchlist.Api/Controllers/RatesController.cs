@@ -1,5 +1,5 @@
+using CurrencyWatchlist.Api.Requests;
 using CurrencyWatchlist.Application.Dtos;
-using CurrencyWatchlist.Application.Exceptions;
 using CurrencyWatchlist.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -25,36 +25,16 @@ public class RatesController(RateService rateService) : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>Range validation happens here, at the controller boundary, before the service
-    /// or provider is ever called (contracts/api-contracts.md, docs/architecture.md:612) -
-    /// to can't be in the future, from must be <= to, and the span is capped at a year so the
-    /// live-proxied call and the resulting chart don't try to render an unbounded number of
-    /// points (FR-016). Defaults to the last 30 days when no range is specified (FR-015).</summary>
+    /// <summary>Range validation (to can't be in the future, from must be <= to, span capped at
+    /// a year so the live-proxied call and the resulting chart don't try to render an unbounded
+    /// number of points - FR-016) happens before this method ever runs, via HistoryQuery's
+    /// IValidatableObject.Validate() (Api/Requests/HistoryQuery.cs). Defaults to the last 30
+    /// days when no range is specified (FR-015), applied by HistoryQuery.EffectiveFrom/To.</summary>
     [HttpGet("history")]
     public async Task<ActionResult<IReadOnlyList<RateSnapshotDto>>> GetHistory(
-        [FromQuery] string @base, [FromQuery] string quote,
-        [FromQuery] DateOnly? from, [FromQuery] DateOnly? to, CancellationToken ct)
+        [FromQuery] string @base, [FromQuery] string quote, [FromQuery] HistoryQuery query, CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var effectiveTo = to ?? today;
-        var effectiveFrom = from ?? effectiveTo.AddDays(-30);
-
-        if (effectiveTo > today)
-        {
-            throw new ValidationException("The end date cannot be in the future.");
-        }
-
-        if (effectiveFrom > effectiveTo)
-        {
-            throw new ValidationException("The start date must be on or before the end date.");
-        }
-
-        if (effectiveTo.DayNumber - effectiveFrom.DayNumber > 365)
-        {
-            throw new ValidationException("The date range cannot exceed one year.");
-        }
-
-        var history = await rateService.GetHistoryAsync(@base.ToUpperInvariant(), quote.ToUpperInvariant(), effectiveFrom, effectiveTo, ct);
+        var history = await rateService.GetHistoryAsync(@base.ToUpperInvariant(), quote.ToUpperInvariant(), query.EffectiveFrom, query.EffectiveTo, ct);
         return Ok(history);
     }
 }

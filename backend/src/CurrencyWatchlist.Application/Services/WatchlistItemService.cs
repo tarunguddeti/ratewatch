@@ -22,13 +22,10 @@ public class WatchlistItemService(
         _ = await watchlistRepo.GetByIdAsync(watchlistId, ct)
             ?? throw new NotFoundException("Watchlist not found.");
 
+        // Well-formed-shape checking (FR-002) happens before this method ever runs, via
+        // [WellFormedCurrencyCode] on AddWatchlistItemRequest (Api/Requests/WatchlistRequests.cs).
         var normalizedBase = CurrencyCode.Normalize(baseCurrency);
         var normalizedQuote = CurrencyCode.Normalize(quoteCurrency);
-
-        if (!CurrencyCode.IsWellFormed(normalizedBase) || !CurrencyCode.IsWellFormed(normalizedQuote))
-        {
-            throw new ValidationException("Currency codes must be 3-letter codes.");
-        }
 
         // FR-009 - a currency cannot be tracked against itself. Load-bearing on v2: the
         // provider itself returns 200/rate 1.0 for a same-currency pair rather than
