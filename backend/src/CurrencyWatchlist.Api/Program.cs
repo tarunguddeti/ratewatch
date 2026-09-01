@@ -45,7 +45,7 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
 
         return new BadRequestObjectResult(problemDetails)
         {
-            ContentTypes = { "application/problem+json" },
+            ContentTypes = { ExceptionHandlingMiddleware.ProblemJson },
         };
     };
 });
@@ -74,10 +74,11 @@ builder.Services.AddScoped<AlertService>();
 // (docs/architecture.md:1018).
 var rateProviderBaseUrl = builder.Configuration["RateProvider:BaseUrl"]
     ?? throw new InvalidOperationException("RateProvider:BaseUrl is not configured.");
+var rateProviderTimeout = TimeSpan.FromSeconds(5);
 builder.Services.AddHttpClient<IRateProvider, FrankfurterRateProvider>(client =>
 {
     client.BaseAddress = new Uri($"{rateProviderBaseUrl.TrimEnd('/')}/v2/");
-    client.Timeout = TimeSpan.FromSeconds(5);
+    client.Timeout = rateProviderTimeout;
 });
 
 // One named CORS policy scoped to the frontend's exact origin, never AllowAnyOrigin

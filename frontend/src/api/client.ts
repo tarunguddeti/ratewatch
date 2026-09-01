@@ -5,6 +5,14 @@
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
+const JSON_CONTENT_TYPE = "application/json";
+
+// Named HTTP-status constants this file (and WatchlistDetailPage.tsx's own 404 check) refer to
+// (specs/004-strong-typing-cleanup - User Story 4).
+const HTTP_NO_CONTENT = 204;
+export const HTTP_NOT_FOUND = 404;
+const HTTP_SERVER_ERROR_THRESHOLD = 500;
+
 export interface ApiError {
   /** null = the request never reached the backend at all (network-level failure). */
   status: number | null;
@@ -24,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     response = await fetch(`${BASE_URL}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...init?.headers },
+      headers: { "Content-Type": JSON_CONTENT_TYPE, ...init?.headers },
     });
   } catch {
     const networkError: ApiError = {
@@ -35,7 +43,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw networkError;
   }
 
-  if (response.status === 204) {
+  if (response.status === HTTP_NO_CONTENT) {
     return undefined as T;
   }
 
@@ -48,7 +56,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       title: problem.title ?? "Something went wrong",
       detail: (body as { detail?: string } | null)?.detail,
       fieldErrors: (body as { errors?: Record<string, string[]> } | null)?.errors,
-      traceId: response.status >= 500 ? (body as { traceId?: string } | null)?.traceId : undefined,
+      traceId: response.status >= HTTP_SERVER_ERROR_THRESHOLD ? (body as { traceId?: string } | null)?.traceId : undefined,
     };
     throw apiError;
   }

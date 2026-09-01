@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
+import { HTTP_NOT_FOUND } from "../api/client";
 import { useWatchlistDetail } from "../hooks/useWatchlistDetail";
 import { useAlerts } from "../hooks/useAlerts";
 import { CurrencyPairForm } from "../components/CurrencyPairForm";
@@ -30,7 +31,7 @@ export function WatchlistDetailPage() {
   }
 
   if (error) {
-    if (error.status === 404) {
+    if (error.status === HTTP_NOT_FOUND) {
       return (
         <main className={styles.page}>
           <Link to="/" className={styles.backLink}>

@@ -27,7 +27,7 @@ public class AlertServiceTests
     {
         _itemRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((WatchlistItem?)null);
 
-        var act = () => _sut.CreateAsync(Guid.NewGuid(), "Above", 1.5m, CancellationToken.None);
+        var act = () => _sut.CreateAsync(Guid.NewGuid(), AlertCondition.Above, 1.5m, CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }
@@ -47,7 +47,7 @@ public class AlertServiceTests
     {
         // The specific boundary docs/architecture.md calls out as worth a dedicated test:
         // rate == threshold must never count as "above" or "below" (constitution Article IV).
-        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = "Above", Threshold = 1.5m };
+        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = AlertCondition.Above, Threshold = 1.5m };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
@@ -60,11 +60,11 @@ public class AlertServiceTests
     }
 
     [Theory]
-    [InlineData("Above", 1.4, 1.5, true)]
-    [InlineData("Above", 1.6, 1.5, false)]
-    [InlineData("Below", 1.6, 1.5, true)]
-    [InlineData("Below", 1.4, 1.5, false)]
-    public async Task EvaluateAsync_StrictComparison_MatchesExpected(string condition, decimal threshold, decimal currentRate, bool expectedTriggered)
+    [InlineData(AlertCondition.Above, 1.4, 1.5, true)]
+    [InlineData(AlertCondition.Above, 1.6, 1.5, false)]
+    [InlineData(AlertCondition.Below, 1.6, 1.5, true)]
+    [InlineData(AlertCondition.Below, 1.4, 1.5, false)]
+    public async Task EvaluateAsync_StrictComparison_MatchesExpected(AlertCondition condition, decimal threshold, decimal currentRate, bool expectedTriggered)
     {
         var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = condition, Threshold = threshold };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
@@ -83,7 +83,7 @@ public class AlertServiceTests
     {
         // FR-020/021 - evaluate obtains the rate itself; it never depends on a prior
         // refresh, and its result also becomes the pair's new latest known rate.
-        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = "Above", Threshold = 1.0m };
+        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = AlertCondition.Above, Threshold = 1.0m };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
@@ -99,7 +99,7 @@ public class AlertServiceTests
     [Fact]
     public async Task EvaluateAsync_ProviderUnavailable_ThrowsRateProviderUnavailableException()
     {
-        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = "Above", Threshold = 1.0m };
+        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = AlertCondition.Above, Threshold = 1.0m };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
             .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))

@@ -21,6 +21,10 @@ public class AppDbContext : DbContext
         base.OnModelCreating(modelBuilder);
     }
 
+    /// <summary>How long SQLite waits on momentary lock contention before giving up with
+    /// "database is locked" (specs/004-strong-typing-cleanup - User Story 3).</summary>
+    private const int BusyTimeoutMilliseconds = 5000;
+
     /// <summary>WAL mode lets reads continue while a write is in progress; the busy timeout
     /// means momentary lock contention waits briefly instead of failing immediately with
     /// "database is locked" - a different failure mode than the one the RateSnapshot atomic
@@ -28,6 +32,6 @@ public class AppDbContext : DbContext
     public async Task ConfigureSqlitePragmasAsync()
     {
         await Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
-        await Database.ExecuteSqlRawAsync("PRAGMA busy_timeout=5000;");
+        await Database.ExecuteSqlRawAsync($"PRAGMA busy_timeout={BusyTimeoutMilliseconds};");
     }
 }

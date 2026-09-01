@@ -13,11 +13,11 @@ public class AlertService(
     IRateProvider rateProvider)
 {
     /// <summary>FR-017 - condition + positive threshold checked before this method ever runs,
-    /// via [AllowedValues] and [Range] on CreateAlertRuleRequest (Api/Requests/AlertRequests.cs);
+    /// via Condition's type and [Range] on CreateAlertRuleRequest (Api/Requests/AlertRequests.cs);
     /// 404 if the watchlist item doesn't exist. No restriction on multiple rules per item,
     /// including opposing conditions (FR-018) - a second rule on the same pair is just another
     /// row.</summary>
-    public async Task<AlertRuleDto> CreateAsync(Guid watchlistItemId, string condition, decimal threshold, CancellationToken ct)
+    public async Task<AlertRuleDto> CreateAsync(Guid watchlistItemId, AlertCondition condition, decimal threshold, CancellationToken ct)
     {
         _ = await itemRepo.GetByIdAsync(watchlistItemId, ct)
             ?? throw new NotFoundException("Watchlist item not found.");
@@ -69,14 +69,19 @@ public class AlertService(
         await rateSnapshotRepo.UpsertAsync(item.BaseCurrency, item.QuoteCurrency, rateResult.Rate, rateResult.SourceTimestamp, now, ct);
 
         // Strict comparison - a rate exactly at the threshold has not gone above or below it
-        // (constitution Article IV).
-        var triggered = rule.Condition == "Above"
-            ? rateResult.Rate > rule.Threshold
-            : rateResult.Rate < rule.Threshold;
+        // (constitution Article IV). Exhaustive over AlertCondition's two members, not a
+        // string-equality check (specs/004-strong-typing-cleanup).
+        var triggered = rule.Condition switch
+        {
+            AlertCondition.Above => rateResult.Rate > rule.Threshold,
+            AlertCondition.Below => rateResult.Rate < rule.Threshold,
+            _ => throw new ArgumentOutOfRangeException(nameof(rule), rule.Condition, "Unrecognized alert condition."),
+        };
 
+        var conditionText = rule.Condition.ToString().ToLowerInvariant();
         var message = triggered
-            ? $"{item.BaseCurrency}/{item.QuoteCurrency} is {rule.Condition.ToLowerInvariant()} {rule.Threshold} (currently {rateResult.Rate})."
-            : $"{item.BaseCurrency}/{item.QuoteCurrency} has not gone {rule.Condition.ToLowerInvariant()} {rule.Threshold} (currently {rateResult.Rate}).";
+            ? $"{item.BaseCurrency}/{item.QuoteCurrency} is {conditionText} {rule.Threshold} (currently {rateResult.Rate})."
+            : $"{item.BaseCurrency}/{item.QuoteCurrency} has not gone {conditionText} {rule.Threshold} (currently {rateResult.Rate}).";
 
         if (triggered)
         {

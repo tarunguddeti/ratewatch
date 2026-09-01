@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using CurrencyWatchlist.Api.Requests;
 using CurrencyWatchlist.Application.Dtos;
+using CurrencyWatchlist.Domain.Entities;
 using FluentAssertions;
 
 namespace CurrencyWatchlist.IntegrationTests;
@@ -32,7 +33,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
         // and this happens with no /api/rates/refresh call anywhere in this test (FR-020).
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
-        var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Above", 1.0m));
+        var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Above, 1.0m));
         createRule.StatusCode.Should().Be(HttpStatusCode.Created);
         var rule = await createRule.Content.ReadFromJsonAsync<AlertRuleDto>();
 
@@ -52,7 +53,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateAlert_EvaluateNotTriggered_NoEventRecorded()
     {
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
-        var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Below", 1.0m));
+        var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Below, 1.0m));
         var rule = await createRule.Content.ReadFromJsonAsync<AlertRuleDto>();
 
         var evaluate = await _client.PostAsync($"/api/alerts/{rule!.Id}/evaluate", null);
@@ -66,8 +67,8 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     {
         var (watchlistId, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
-        var aboveCreate = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Above", 1.0m));
-        var belowCreate = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Below", 1.0m));
+        var aboveCreate = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Above, 1.0m));
+        var belowCreate = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Below, 1.0m));
         aboveCreate.StatusCode.Should().Be(HttpStatusCode.Created);
         belowCreate.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -92,13 +93,35 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     {
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
-        var response = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Sideways", 1.5m));
+        // Condition is now AlertCondition (specs/004-strong-typing-cleanup), so an invalid
+        // value can no longer be expressed via the strongly-typed CreateAlertRuleRequest
+        // constructor at all - send it as raw JSON to exercise the deserialization-time
+        // rejection path directly (research.md decision 2).
+        var response = await _client.PostAsJsonAsync(
+            "/api/alerts",
+            new { watchlistItemId = itemId, condition = "Sideways", threshold = 1.5m });
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();
         var detail = body.GetProperty("detail").GetString();
         detail.Should().NotBeNullOrWhiteSpace();
         detail.Should().NotBe("One or more validation errors occurred.");
+    }
+
+    [Fact]
+    public async Task CreateAlert_WrongCaseCondition_Returns400()
+    {
+        // Regression test: System.Text.Json's built-in JsonStringEnumConverter matches enum
+        // names case-insensitively on read, which would have silently accepted "above" - found
+        // live during quickstart verification, not caught by any test until this one
+        // (specs/004-strong-typing-cleanup/research.md decision 1).
+        var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
+
+        var response = await _client.PostAsJsonAsync(
+            "/api/alerts",
+            new { watchlistItemId = itemId, condition = "above", threshold = 1.5m });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
     [Theory]
@@ -108,7 +131,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     {
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
-        var response = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, "Above", threshold));
+        var response = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Above, threshold));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>();

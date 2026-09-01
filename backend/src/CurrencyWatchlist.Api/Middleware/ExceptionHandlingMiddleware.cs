@@ -10,6 +10,11 @@ namespace CurrencyWatchlist.Api.Middleware;
 /// (docs/architecture.md's Error Handling &amp; Observability decisions).</summary>
 public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
+    /// <summary>The single source of truth for this content type - Program.cs's
+    /// InvalidModelStateResponseFactory previously restated it independently
+    /// (specs/004-strong-typing-cleanup/research.md decision 6).</summary>
+    public const string ProblemJson = "application/problem+json";
+
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -39,7 +44,7 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
                 problem.Extensions["traceId"] = context.TraceIdentifier;
             }
 
-            context.Response.ContentType = "application/problem+json";
+            context.Response.ContentType = ProblemJson;
             context.Response.StatusCode = status;
             await context.Response.WriteAsJsonAsync(problem);
         }

@@ -15,6 +15,10 @@ public class FrankfurterRateProvider : IRateProvider
 {
     private const string CurrenciesCacheKey = "frankfurter:supported-currencies";
 
+    /// <summary>How long the supported-currency list is cached before the next request
+    /// re-fetches it (specs/004-strong-typing-cleanup - User Story 3).</summary>
+    private static readonly TimeSpan CurrenciesCacheDuration = TimeSpan.FromHours(24);
+
     private readonly HttpClient _http;
     private readonly IMemoryCache _cache;
     private readonly ILogger<FrankfurterRateProvider> _logger;
@@ -75,7 +79,7 @@ public class FrankfurterRateProvider : IRateProvider
     {
         var cached = await _cache.GetOrCreateAsync(CurrenciesCacheKey, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+            entry.AbsoluteExpirationRelativeToNow = CurrenciesCacheDuration;
 
             HttpResponseMessage response;
             try

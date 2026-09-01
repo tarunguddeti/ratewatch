@@ -56,6 +56,10 @@ export interface Currency {
 
 export type AlertCondition = "Above" | "Below";
 
+// The single source AlertForm's option list is derived from, so a third condition would mean
+// changing one array entry rather than a hand-edited JSX block (specs/004-strong-typing-cleanup).
+export const ALERT_CONDITIONS: readonly AlertCondition[] = ["Above", "Below"];
+
 export interface AlertRule {
   id: string;
   watchlistItemId: string;
