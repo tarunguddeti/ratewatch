@@ -61,17 +61,48 @@ clearly; 5009 (this project's default) avoids that.
 cd backend
 dotnet test
 
+# Backend — with a coverage report (requires: dotnet tool install -g dotnet-reportgenerator-globaltool)
+dotnet test --collect:"XPlat Code Coverage" --results-directory ./coverage
+reportgenerator -reports:"./coverage/*/coverage.cobertura.xml" -targetdir:./coverage/report -reporttypes:"TextSummary;Html"
+
 # Frontend — unit
 cd frontend
 npm run test
+
+# Frontend — unit, with a coverage report
+npm run test:coverage
 
 # Frontend — e2e (spins up both real servers automatically)
 npm run test:e2e
 ```
 
-51 backend tests, 7 frontend unit tests, 1 end-to-end happy path — all passing against real
-dependencies wherever the constitution allows it (a real SQLite database for integration
-tests; the live Frankfurter API for the e2e path), and strictly mocked everywhere else.
+62 backend tests (36 unit, 26 integration), 25 frontend unit tests, 1 end-to-end happy path —
+all passing against real dependencies wherever the project's own testing rules allow it (a real
+SQLite database for integration tests; the live Frankfurter API for the e2e path), and strictly
+mocked everywhere else. Line coverage: **81% backend**, **83.6% frontend** — both above the
+project's 80% target.
+
+## Assumptions
+
+Things taken as given, not stated as a requirement, that shaped scope and design:
+
+- **Single implicit user — no authentication, no multi-tenancy.** Every watchlist, item, and
+  alert belongs to whoever is calling the API; there's no login and no concept of "my watchlist"
+  versus someone else's. A scoping decision for a build this size, not an oversight — see the
+  Enterprise Diagram in `docs/architecture.md` for where auth reappears in a real version.
+- **Frankfurter is trusted as the sole source of truth for both currencies and rates.** Nothing
+  in this build cross-checks it against a second provider or treats its data as anything other
+  than authoritative.
+- **Usage stays at human scale.** A person manually building a handful of watchlists with a
+  handful of pairs each — not thousands of programmatically-generated rows. The sequential
+  refresh write loop and the in-memory (rather than persisted) currency cache both lean on this
+  directly; see Decisions below for why that's the right amount of engineering for this problem.
+- **Multiple alert rules are allowed on the same currency pair.**  Including opposing or
+  identical-threshold ones.** The brief doesn't restrict this, and a two-sided "above X, below Y"
+  alert is a legitimate real use case, not a duplicate to reject.
+- **A reviewer running this locally has the .NET 8 SDK and Node 18+ installed.**, and two free
+  local ports — 5009 for the backend and 5173 for the frontend. No containerization or cloud environment is
+  assumed.
 
 ## Decisions
 

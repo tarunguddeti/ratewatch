@@ -18,3 +18,7 @@ packages/
 *.db
 *.db-shm
 *.db-wal
+
+# Test coverage output
+[Cc]overage/
+TestResults/
