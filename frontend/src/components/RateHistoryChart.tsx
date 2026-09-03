@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ratesApi } from "../api/rates";
 import type { ApiError } from "../api/client";
@@ -18,15 +18,28 @@ export function RateHistoryChart({ baseCurrency, quoteCurrency }: RateHistoryCha
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
+  // specs/006-fix-ui-loading-bugs FR-006 - identifies the most recently started `load()` call
+  // so a response from a superseded range request is discarded instead of overwriting the
+  // chart with data for a range the user no longer has selected.
+  const latestRequestId = useRef(0);
+
   const load = async () => {
+    const requestId = ++latestRequestId.current;
     setLoading(true);
     setError(null);
     try {
-      setData(await ratesApi.getHistory(baseCurrency, quoteCurrency, from || undefined, to || undefined));
+      const result = await ratesApi.getHistory(baseCurrency, quoteCurrency, from || undefined, to || undefined);
+      if (requestId === latestRequestId.current) {
+        setData(result);
+      }
     } catch (err) {
-      setError(err as ApiError);
+      if (requestId === latestRequestId.current) {
+        setError(err as ApiError);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestRequestId.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -46,8 +59,8 @@ export function RateHistoryChart({ baseCurrency, quoteCurrency }: RateHistoryCha
       <label>
         To <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
       </label>
-      <button type="button" onClick={() => void load()}>
-        Apply Range
+      <button type="button" onClick={() => void load()} disabled={loading}>
+        {loading ? "Applying…" : "Apply Range"}
       </button>
 
       {loading && <p>Loading history…</p>}
