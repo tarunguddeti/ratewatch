@@ -45,9 +45,10 @@ public class AlertService(
 
     /// <summary>FR-019/020/021/022 - obtains the pair's rate live at the moment it runs
     /// (never reads a stored snapshot, so it never depends on a prior refresh having
-    /// happened), upserts RateSnapshot as a side effect, compares with strict decimal
-    /// inequality, and records a trigger event only when the condition is actually satisfied
-    /// (docs/architecture.md:727-758).</summary>
+    /// happened), upserts RateSnapshot as a side effect, compares against the rule's condition
+    /// (Above/Below strict, AboveOrEqual/BelowOrEqual inclusive - docs/architecture.md's
+    /// Decisions & Tradeoffs → Data Model & Business Rules), and records a trigger event only
+    /// when the condition is actually satisfied.</summary>
     public async Task<EvaluateResultDto> EvaluateAsync(Guid ruleId, CancellationToken ct)
     {
         var rule = await alertRuleRepo.GetByIdWithItemAsync(ruleId, ct)
@@ -68,17 +69,30 @@ public class AlertService(
         var now = DateTime.UtcNow;
         await rateSnapshotRepo.UpsertAsync(item.BaseCurrency, item.QuoteCurrency, rateResult.Rate, rateResult.SourceTimestamp, now, ct);
 
-        // Strict comparison - a rate exactly at the threshold has not gone above or below it
-        // (constitution Article IV). Exhaustive over AlertCondition's two members, not a
-        // string-equality check (specs/004-strong-typing-cleanup).
+        // Above/Below are strict - a rate exactly at the threshold has not gone above or below
+        // it; AboveOrEqual/BelowOrEqual are their explicit inclusive counterparts, where that
+        // same rate does count (constitution Article IV, specs/007-inclusive-alert-conditions).
+        // Exhaustive over AlertCondition's four members, not a string-equality check
+        // (specs/004-strong-typing-cleanup).
         var triggered = rule.Condition switch
         {
             AlertCondition.Above => rateResult.Rate > rule.Threshold,
             AlertCondition.Below => rateResult.Rate < rule.Threshold,
+            AlertCondition.AboveOrEqual => rateResult.Rate >= rule.Threshold,
+            AlertCondition.BelowOrEqual => rateResult.Rate <= rule.Threshold,
             _ => throw new ArgumentOutOfRangeException(nameof(rule), rule.Condition, "Unrecognized alert condition."),
         };
 
-        var conditionText = rule.Condition.ToString().ToLowerInvariant();
+        // Explicit phrase map, not rule.Condition.ToString().ToLowerInvariant() - that would
+        // render "aboveorequal" verbatim for the two inclusive conditions.
+        var conditionText = rule.Condition switch
+        {
+            AlertCondition.Above => "above",
+            AlertCondition.Below => "below",
+            AlertCondition.AboveOrEqual => "at or above",
+            AlertCondition.BelowOrEqual => "at or below",
+            _ => throw new ArgumentOutOfRangeException(nameof(rule), rule.Condition, "Unrecognized alert condition."),
+        };
         var message = triggered
             ? $"{item.BaseCurrency}/{item.QuoteCurrency} is {conditionText} {rule.Threshold} (currently {rateResult.Rate})."
             : $"{item.BaseCurrency}/{item.QuoteCurrency} has not gone {conditionText} {rule.Threshold} (currently {rateResult.Rate}).";

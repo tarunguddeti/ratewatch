@@ -78,6 +78,46 @@ public class AlertServiceTests
         _alertRuleRepo.Verify(r => r.AddEventAsync(It.IsAny<AlertEvent>(), It.IsAny<CancellationToken>()), expectedTriggered ? Times.Once : Times.Never);
     }
 
+    [Theory]
+    [InlineData(AlertCondition.AboveOrEqual, 1.5, 1.5, true)]
+    [InlineData(AlertCondition.BelowOrEqual, 1.5, 1.5, true)]
+    public async Task EvaluateAsync_RateExactlyEqualsThreshold_InclusiveConditionsTriggered(AlertCondition condition, decimal threshold, decimal currentRate, bool expectedTriggered)
+    {
+        // The inverse of EvaluateAsync_RateExactlyEqualsThreshold_NotTriggered above:
+        // AboveOrEqual/BelowOrEqual are explicit inclusive counterparts to Above/Below, so the
+        // same rate == threshold boundary that never triggers Above/Below must always trigger
+        // these two (specs/007-inclusive-alert-conditions).
+        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = condition, Threshold = threshold };
+        _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
+        _rateProvider
+            .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RateResult.Ok(currentRate, DateTime.UtcNow));
+
+        var result = await _sut.EvaluateAsync(rule.Id, CancellationToken.None);
+
+        result.Triggered.Should().Be(expectedTriggered);
+        _alertRuleRepo.Verify(r => r.AddEventAsync(It.IsAny<AlertEvent>(), It.IsAny<CancellationToken>()), expectedTriggered ? Times.Once : Times.Never);
+    }
+
+    [Theory]
+    [InlineData(AlertCondition.AboveOrEqual, 1.4, 1.5, true)]
+    [InlineData(AlertCondition.AboveOrEqual, 1.6, 1.5, false)]
+    [InlineData(AlertCondition.BelowOrEqual, 1.6, 1.5, true)]
+    [InlineData(AlertCondition.BelowOrEqual, 1.4, 1.5, false)]
+    public async Task EvaluateAsync_InclusiveComparison_MatchesExpected(AlertCondition condition, decimal threshold, decimal currentRate, bool expectedTriggered)
+    {
+        var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = condition, Threshold = threshold };
+        _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
+        _rateProvider
+            .Setup(p => p.GetLatestRateAsync("USD", "AUD", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(RateResult.Ok(currentRate, DateTime.UtcNow));
+
+        var result = await _sut.EvaluateAsync(rule.Id, CancellationToken.None);
+
+        result.Triggered.Should().Be(expectedTriggered);
+        _alertRuleRepo.Verify(r => r.AddEventAsync(It.IsAny<AlertEvent>(), It.IsAny<CancellationToken>()), expectedTriggered ? Times.Once : Times.Never);
+    }
+
     [Fact]
     public async Task EvaluateAsync_NoPriorRefreshNeeded_FetchesLiveAndUpsertsAsSideEffect()
     {

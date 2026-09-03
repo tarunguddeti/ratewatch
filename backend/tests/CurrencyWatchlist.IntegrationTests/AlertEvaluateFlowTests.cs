@@ -63,6 +63,26 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     }
 
     [Fact]
+    public async Task CreateAlert_InclusiveCondition_TriggersWhenRateExactlyEqualsThreshold()
+    {
+        // FakeFrankfurterHandler's USD/AUD rate is 1.5 - an "AboveOrEqual 1.5" rule must
+        // trigger even though the same rate/threshold pair would not trigger a strict "Above"
+        // (specs/007-inclusive-alert-conditions).
+        var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
+
+        var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.AboveOrEqual, 1.5m));
+        createRule.StatusCode.Should().Be(HttpStatusCode.Created);
+        var rule = await createRule.Content.ReadFromJsonAsync<AlertRuleDto>();
+
+        var evaluate = await _client.PostAsync($"/api/alerts/{rule!.Id}/evaluate", null);
+        evaluate.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await evaluate.Content.ReadFromJsonAsync<EvaluateResultDto>();
+
+        result!.Triggered.Should().BeTrue();
+        result.CurrentRate.Should().Be(1.5m);
+    }
+
+    [Fact]
     public async Task OpposingRulesOnSamePair_CoexistAndEvaluateIndependently()
     {
         var (watchlistId, itemId) = await CreateWatchlistItemAsync("USD", "AUD");

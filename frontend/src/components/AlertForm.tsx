@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { ApiError } from "../api/client";
-import { ALERT_CONDITIONS, type AlertCondition, type WatchlistItemDetail } from "../types/domain";
+import { ALERT_CONDITIONS, ALERT_CONDITION_LABELS, type AlertCondition, type WatchlistItemDetail } from "../types/domain";
 import styles from "./AlertForm.module.css";
 
 interface AlertFormProps {
@@ -13,9 +13,9 @@ interface AlertFormProps {
 // (specs/004-strong-typing-cleanup).
 const MIN_THRESHOLD_INPUT = "0.000001";
 
-// FR-017 - condition (Above/Below) + a positive threshold. Client-side validation here is a
-// UX shortcut only, to save a round trip - the backend re-validates everything regardless
-// (docs/architecture.md:333).
+// FR-017 - condition (Above/Below/AboveOrEqual/BelowOrEqual, specs/007-inclusive-alert-conditions)
+// + a positive threshold. Client-side validation here is a UX shortcut only, to save a round
+// trip - the backend re-validates everything regardless (docs/architecture.md:333).
 export function AlertForm({ items, onCreate }: AlertFormProps) {
   const [watchlistItemId, setWatchlistItemId] = useState("");
   const [condition, setCondition] = useState<AlertCondition>("Above");
@@ -57,7 +57,7 @@ export function AlertForm({ items, onCreate }: AlertFormProps) {
         <select value={condition} onChange={(e) => setCondition(e.target.value as AlertCondition)}>
           {ALERT_CONDITIONS.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {ALERT_CONDITION_LABELS[c]}
             </option>
           ))}
         </select>
