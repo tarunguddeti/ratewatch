@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { EvaluateResultBanner } from "./EvaluateResultBanner";
 import type { ApiError } from "../api/client";
-import type { AlertRule, EvaluateResult, WatchlistItemDetail } from "../types/domain";
+import { ALERT_CONDITION_LABELS, type AlertRule, type EvaluateResult, type WatchlistItemDetail } from "../types/domain";
 import styles from "./AlertList.module.css";
 
 interface AlertListProps {
@@ -43,7 +43,7 @@ export function AlertList({ rules, items, onEvaluate }: AlertListProps) {
       {rules.map((rule) => (
         <li key={rule.id} className={styles.row}>
           <span className={styles.label}>
-            {pairLabel(rule.watchlistItemId)} — {rule.condition} {rule.threshold}
+            {pairLabel(rule.watchlistItemId)} — {ALERT_CONDITION_LABELS[rule.condition]} {rule.threshold}
           </span>
           <button
             type="button"
