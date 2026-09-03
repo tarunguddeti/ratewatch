@@ -460,7 +460,7 @@ erDiagram
 
     <p><strong>Watchlist</strong> is just a named container. <strong>WatchlistItem</strong> is one tracked currency pair inside a watchlist — a base and a quote currency, nothing else. <strong>AlertRule</strong> is a standing condition on one item ("notify me when this goes above X"). <strong>AlertEvent</strong> is a record of one actual trigger, not a log of every check — only the moments a rule fired, never the moments it didn't. <strong>RateSnapshot</strong> is the one entity with no foreign key at all: it's a cache of the latest fetched rate per currency pair, shared across every watchlist that happens to track the same pair, rather than something any single watchlist owns.</p>
 
-    <p>A few things about this shape are worth stating plainly rather than leaving implicit: <code>WatchlistItem</code> enforces a uniqueness constraint per watchlist so the same pair can't be added twice; deleting a <code>Watchlist</code> cascades all the way down through its items, rules, and events; <code>Above</code>/<code>Below</code> are strict inequalities (<code>&gt;</code> / <code>&lt;</code>), not inclusive; all rate and threshold arithmetic uses <code>decimal</code>, never <code>double</code>, end to end; and multiple alert rules on the same item are intentionally allowed — a two-sided "above X, below Y" pair of alerts is a legitimate setup, not a duplicate to reject. Full reasoning for each of these is under <a href="#decisions">Decisions &amp; Tradeoffs → Data Model &amp; Business Rules</a>.</p>
+    <p>A few things about this shape are worth stating plainly rather than leaving implicit: <code>WatchlistItem</code> enforces a uniqueness constraint per watchlist so the same pair can't be added twice; deleting a <code>Watchlist</code> cascades all the way down through its items, rules, and events; <code>Above</code>/<code>Below</code> are strict inequalities (<code>&gt;</code> / <code>&lt;</code>), with <code>AboveOrEqual</code>/<code>BelowOrEqual</code> as separate, explicit inclusive variants (<code>&gt;=</code> / <code>&lt;=</code>) rather than one global choice; all rate and threshold arithmetic uses <code>decimal</code>, never <code>double</code>, end to end; and multiple alert rules on the same item are intentionally allowed — a two-sided "above X, below Y" pair of alerts is a legitimate setup, not a duplicate to reject. Full reasoning for each of these is under <a href="#decisions">Decisions &amp; Tradeoffs → Data Model &amp; Business Rules</a>.</p>
 
     <p>RateSnapshot deserves a closer look on its own, since its purpose changed partway through this design (see <a href="#decisions">Decisions &amp; Tradeoffs → Rate Data: Latest vs. History</a>): it used to be the sole source of rate history, and now it's purely a latest-rate cache. It wasn't eliminated even after that narrowing — it's still what <code>GET /api/rates/latest</code> and the watchlist-detail join read from, and what refresh and evaluate write into.</p>
   </section>
@@ -636,6 +636,8 @@ graph TB
     </div>
 
     <p><strong>Date-range rules for history:</strong> <code>to</code> can't be in the future, <code>from</code> must be ≤ <code>to</code>, and the span is capped at a year so the live-proxied call and the resulting chart don't try to render an unbounded number of points. The chart defaults to the last 30 days before a user picks a custom range. <code>GET /api/currencies</code> is the one endpoint not in the original brief — added to back the currency dropdown; see Decisions &amp; Tradeoffs → Error Handling &amp; Observability for why it's a thin proxy rather than a new table.</p>
+
+    <p><strong>Alert <code>condition</code> values:</strong> <code>Above</code>, <code>AboveOrEqual</code>, <code>Below</code>, <code>BelowOrEqual</code> — four values, not two. <code>Above</code>/<code>Below</code> are strict (<code>rate &gt; threshold</code> / <code>rate &lt; threshold</code>); <code>AboveOrEqual</code>/<code>BelowOrEqual</code> are their inclusive counterparts (<code>rate &gt;= threshold</code> / <code>rate &lt;= threshold</code>). A rate exactly at the threshold triggers only the variant the rule was explicitly created with. See Decisions &amp; Tradeoffs → Data Model &amp; Business Rules for why both variants exist side by side rather than picking one globally.</p>
   </section>
 
   <section id="errors">
@@ -1179,7 +1181,7 @@ sequenceDiagram
     participant Repo as AlertRuleRepository
     participant DB as SQLite
 
-    U->>FE: Pick an item, Condition (Above/Below), Threshold, submit
+    U->>FE: Pick an item, Condition (Above/AboveOrEqual/Below/BelowOrEqual), Threshold, submit
     FE->>C: POST /api/alerts { watchlistItemId, condition, threshold }
     C->>S: CreateAsync(dto)
     alt watchlistItemId not found
@@ -1422,7 +1424,7 @@ sequenceDiagram
         <tbody>
           <tr>
             <td>Unit — <code>Application</code> services</td>
-            <td><code>WatchlistService</code>, <code>RateService</code>, <code>AlertService</code> against strictly mocked repositories and <code>IRateProvider</code> — no real database connection or real HTTP call anywhere in this layer, by rule, not convenience. This is where the bulk of the coverage number and the actual branching logic both live: the Above/Below boundary condition, cascade-adjacent business rules, the Result-to-exception unwrap in <code>EvaluateAsync</code>, the batch-then-fallback-free refresh logic</td>
+            <td><code>WatchlistService</code>, <code>RateService</code>, <code>AlertService</code> against strictly mocked repositories and <code>IRateProvider</code> — no real database connection or real HTTP call anywhere in this layer, by rule, not convenience. This is where the bulk of the coverage number and the actual branching logic both live: the strict-vs-inclusive boundary across all four alert conditions, cascade-adjacent business rules, the Result-to-exception unwrap in <code>EvaluateAsync</code>, the batch-then-fallback-free refresh logic</td>
             <td>xUnit + Moq + FluentAssertions</td>
           </tr>
           <tr>
@@ -1599,7 +1601,7 @@ graph TB
 
       <div class="callout callout-decision">
         <div class="callout-label">Decision</div>
-        <p><strong>Above/Below are strict inequalities — <code>rate &gt; threshold</code> and <code>rate &lt; threshold</code> — never <code>&gt;=</code>/<code>&lt;=</code>.</strong> "Goes above 1.60" describes crossing past a level, not touching it; a rate sitting exactly at the threshold hasn't gone above it. The two conditions deliberately share one exact value — the threshold itself — where neither fires, which is correct behavior for two open-ended conditions, not an edge case needing a special rule. Worth a dedicated unit test asserting <code>rate == threshold → not triggered</code>, since it's precisely the kind of subtle rule a reviewer might test directly at the boundary.</p>
+        <p><strong>Strict and inclusive comparisons are both offered as explicit, separate condition values — <code>Above</code>, <code>AboveOrEqual</code>, <code>Below</code>, <code>BelowOrEqual</code> — rather than picking one meaning for <code>Above</code>/<code>Below</code> globally.</strong> "Goes above 1.60" is genuinely ambiguous: some readers mean strictly past that level, others mean at-or-past it, and picking one interpretation for everyone silently gets it wrong for the other half. Making it an explicit fourth-and-final choice on the condition itself, rather than a single global policy, removes the ambiguity instead of guessing at it. <code>Above</code>/<code>Below</code> keep their original strict meaning (<code>rate &gt; threshold</code> / <code>rate &lt; threshold</code>) so a threshold sitting exactly on the line is not treated as a match for either; <code>AboveOrEqual</code>/<code>BelowOrEqual</code> are the new inclusive counterparts (<code>rate &gt;= threshold</code> / <code>rate &lt;= threshold</code>) where that same boundary value does count as a trigger. Worth a dedicated set of unit tests asserting <code>rate == threshold → not triggered</code> for <code>Above</code>/<code>Below</code> and <code>rate == threshold → triggered</code> for <code>AboveOrEqual</code>/<code>BelowOrEqual</code>, since that boundary is exactly what a reviewer would check first.</p>
       </div>
 
       <div class="callout callout-decision">
