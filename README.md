@@ -7,8 +7,8 @@
 > to implement the build itself, but the direction, the judgment calls, and every decision and
 > tradeoff documented here are mine. The architecture doc is also up as a
 > [Claude artifact](https://claude.ai/code/artifact/e0d7c71d-4ec1-40b1-8a30-5505627810eb) if
-> you'd prefer to read it there. All the architecture diagrams are present in Claude artifact and 
-> also in `docs/architecture.md` file
+> you'd prefer to read it there. All the architecture diagrams and sequence diagrams are present in Claude 
+> artifact and also in `docs/architecture.md` file
 
 Track currency pairs across named watchlists, refresh their live exchange rates, view rate
 history, and define above/below threshold alerts you can evaluate on demand.
