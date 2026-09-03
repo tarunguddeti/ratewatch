@@ -15,7 +15,7 @@ import styles from "./WatchlistDetailPage.module.css";
 // FR-003/006 (US1) + FR-011/014/015 (US2) + FR-017/018/020/023 (US3).
 export function WatchlistDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data, loading, error, addItem, removeItem, refetch } = useWatchlistDetail(id!);
+  const { data, loading, mutating, error, addItem, removeItem, refetch, reloadAfterRefresh } = useWatchlistDetail(id!);
   const alerts = useAlerts(id!);
   const [selectedPair, setSelectedPair] = useState<WatchlistItemDetail | null>(null);
 
@@ -77,8 +77,14 @@ export function WatchlistDetailPage() {
 
       <div className={styles.header}>
         <h1>{data.name}</h1>
-        <RefreshRatesButton onRefreshed={() => void refetch()} />
+        <RefreshRatesButton onRefreshed={() => void reloadAfterRefresh()} />
       </div>
+
+      {mutating && (
+        <p className={styles.loading} aria-live="polite">
+          Updating…
+        </p>
+      )}
 
       <div className={styles.section}>
         <RateTable items={data.items} onRemoveItem={removeItem} alertCountByItemId={alertCountByItemId} />

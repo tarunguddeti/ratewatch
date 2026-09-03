@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WatchlistDetailPage } from "../../src/pages/WatchlistDetailPage";
@@ -76,5 +76,58 @@ describe("WatchlistDetailPage back navigation", () => {
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     const backLink = screen.getByRole("link", { name: /back to watchlists/i });
     expect(backLink).toHaveAttribute("href", "/");
+  });
+});
+
+// specs/006-fix-ui-loading-bugs FR-001 - removing a currency pair (or any other mutation) must
+// not blank the already-rendered rate table back to the full-page "Loading watchlist…" message;
+// only a small localized indicator should reflect the in-progress state.
+describe("WatchlistDetailPage keeps content visible during a mutation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("keeps the rate table on screen while removing an item, instead of showing the full-page loading message", async () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    let resolveDelete!: () => void;
+    const deletePending = new Promise<void>((resolve) => {
+      resolveDelete = resolve;
+    });
+
+    const detailBody = {
+      id: WATCHLIST_ID,
+      name: "Travel Fund",
+      createdAt: "2026-01-01",
+      items: [{ id: "item-1", baseCurrency: "USD", quoteCurrency: "EUR", latestRate: null }],
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string, init?: RequestInit) => {
+        if (init?.method === "DELETE") {
+          return deletePending.then(() => ({ ok: true, status: 204, json: async () => undefined }));
+        }
+        if (url.includes("/api/alerts")) {
+          return Promise.resolve({ ok: true, status: 200, json: async () => [] });
+        }
+        return Promise.resolve({ ok: true, status: 200, json: async () => detailBody });
+      }),
+    );
+
+    renderAtDetailRoute();
+
+    const removeButton = await screen.findByRole("button", { name: /remove/i });
+    fireEvent.click(removeButton);
+
+    // While the DELETE request is still pending, the row and the rest of the page must remain
+    // visible - never replaced by the full-page "Loading watchlist…" message.
+    expect(await screen.findByText(/updating/i)).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "USD/EUR" })).toBeInTheDocument();
+    expect(screen.queryByText(/loading watchlist/i)).not.toBeInTheDocument();
+
+    resolveDelete();
+    await waitFor(() => expect(screen.queryByText(/updating/i)).not.toBeInTheDocument());
   });
 });
