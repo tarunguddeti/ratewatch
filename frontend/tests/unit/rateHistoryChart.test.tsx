@@ -16,9 +16,9 @@ function deferred() {
   return { promise, resolve };
 }
 
-// specs/006-fix-ui-loading-bugs FR-005/FR-006 - "Apply Range" can't be used to start an
-// overlapping request while one is in flight, and a response from a superseded request must
-// never overwrite the chart with data for a pair/range the user no longer has selected.
+// "Apply Range" can't be used to start an overlapping request while one is in flight, and a
+// response from a superseded request must never overwrite the chart with data for a
+// pair/range the user no longer has selected.
 describe("RateHistoryChart", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

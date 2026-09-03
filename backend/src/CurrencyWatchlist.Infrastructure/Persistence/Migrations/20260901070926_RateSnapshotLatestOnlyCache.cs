@@ -13,10 +13,9 @@ namespace CurrencyWatchlist.Infrastructure.Persistence.Migrations
             // Any pre-existing database may have multiple rows per (BaseCurrency, QuoteCurrency)
             // accumulated under the old per-day unique key - creating the new two-column unique
             // index below would fail on a duplicate-key violation against that data. Clearing
-            // first guarantees the index creation always succeeds and directly satisfies "clear
-            // the historical records" (specs/005-ratesnapshot-cache-cleanup/spec.md FR-004) -
-            // RateSnapshot is disposable cache data, fully and correctly repopulated by the next
-            // refresh or alert evaluation (data-model.md's migration section).
+            // first guarantees the index creation always succeeds - RateSnapshot is disposable
+            // cache data, fully and correctly repopulated by the next refresh or alert
+            // evaluation.
             migrationBuilder.Sql("DELETE FROM \"RateSnapshots\";");
 
             migrationBuilder.DropIndex(
@@ -40,7 +39,7 @@ namespace CurrencyWatchlist.Infrastructure.Persistence.Migrations
         {
             // The DELETE above is not reversible - there is no per-day history left to restore
             // by this point. Down() only reverts the index shape, consistent with this being an
-            // intentionally one-way data cleanup (spec.md Assumptions).
+            // intentionally one-way data cleanup.
             migrationBuilder.DropIndex(
                 name: "IX_RateSnapshots_BaseCurrency_QuoteCurrency",
                 table: "RateSnapshots");

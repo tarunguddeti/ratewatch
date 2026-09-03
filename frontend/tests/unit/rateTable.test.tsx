@@ -12,9 +12,8 @@ function rowFor(pairLabel: string) {
   return screen.getByRole("cell", { name: pairLabel }).closest("tr") as HTMLElement;
 }
 
-// specs/006-fix-ui-loading-bugs FR-004 - repeated clicks on one row's Remove while its request
-// is in flight must never fire a second onRemoveItem call for that row, and must not affect
-// other rows' controls.
+// Repeated clicks on one row's Remove while its request is in flight must never fire a second
+// onRemoveItem call for that row, and must not affect other rows' controls.
 describe("RateTable per-row remove busy state", () => {
   afterEach(() => {
     vi.restoreAllMocks();

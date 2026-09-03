@@ -12,7 +12,6 @@ import { AlertList } from "../components/AlertList";
 import type { WatchlistItemDetail } from "../types/domain";
 import styles from "./WatchlistDetailPage.module.css";
 
-// FR-003/006 (US1) + FR-011/014/015 (US2) + FR-017/018/020/023 (US3).
 export function WatchlistDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, loading, mutating, error, addItem, removeItem, refetch, reloadAfterRefresh } = useWatchlistDetail(id!);
@@ -62,8 +61,8 @@ export function WatchlistDetailPage() {
 
   // Now that alert rules are loaded on this page, RateTable's delete warning can be
   // upgraded from a plain confirmation to one that names the alert-rule count on that
-  // specific pair (FR-010) - not available back when RateTable was first built (Phase 8 US2),
-  // since alerts hadn't been wired in yet.
+  // specific pair - not available back when RateTable was first built, since alerts hadn't
+  // been wired in yet.
   const alertCountByItemId = (alerts.data ?? []).reduce<Record<string, number>>((acc, rule) => {
     acc[rule.watchlistItemId] = (acc[rule.watchlistItemId] ?? 0) + 1;
     return acc;

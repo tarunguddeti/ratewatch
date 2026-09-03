@@ -1,6 +1,5 @@
-// Mirrors the DTO shapes in backend/src/CurrencyWatchlist.Application/Dtos/ and
-// specs/001-currency-watchlist-alerts/contracts/api-contracts.md. Field names are camelCase,
-// matching System.Text.Json's default serialization of the backend's C# records.
+// Mirrors the DTO shapes in backend/src/CurrencyWatchlist.Application/Dtos/. Field names are
+// camelCase, matching System.Text.Json's default serialization of the backend's C# records.
 
 export interface Watchlist {
   id: string;
@@ -57,11 +56,11 @@ export interface Currency {
 export type AlertCondition = "Above" | "Below" | "AboveOrEqual" | "BelowOrEqual";
 
 // The single source AlertForm's option list is derived from, so a third condition would mean
-// changing one array entry rather than a hand-edited JSX block (specs/004-strong-typing-cleanup).
+// changing one array entry rather than a hand-edited JSX block.
 export const ALERT_CONDITIONS: readonly AlertCondition[] = ["Above", "Below", "AboveOrEqual", "BelowOrEqual"];
 
-// Plain-language labels for each condition, used everywhere a condition is shown to a user
-// (specs/007-inclusive-alert-conditions) - the raw enum string is never displayed directly.
+// Plain-language labels for each condition, used everywhere a condition is shown to a user -
+// the raw enum string is never displayed directly.
 export const ALERT_CONDITION_LABELS: Record<AlertCondition, string> = {
   Above: "Above",
   Below: "Below",

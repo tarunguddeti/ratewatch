@@ -5,8 +5,8 @@ import type { AlertCondition, WatchlistItemDetail } from "../../src/types/domain
 
 const items: WatchlistItemDetail[] = [{ id: "item-1", baseCurrency: "USD", quoteCurrency: "EUR", latestRate: null }];
 
-// specs/007-inclusive-alert-conditions FR-006 - the condition dropdown must offer all four
-// conditions in plain language, and still submit the raw AlertCondition value underneath.
+// The condition dropdown must offer all four conditions in plain language, and still submit
+// the raw AlertCondition value underneath.
 describe("AlertForm condition dropdown", () => {
   it("renders all four conditions with plain-language labels", () => {
     render(<AlertForm items={items} onCreate={vi.fn().mockResolvedValue(undefined)} />);

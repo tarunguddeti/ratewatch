@@ -3,6 +3,7 @@ using CurrencyWatchlist.Application.Repositories;
 using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace CurrencyWatchlist.UnitTests.Services;
@@ -11,11 +12,12 @@ public class WatchlistServiceTests
 {
     private readonly Mock<IWatchlistRepository> _watchlistRepo = new();
     private readonly Mock<IRateSnapshotRepository> _rateSnapshotRepo = new();
+    private readonly Mock<ILogger<WatchlistService>> _logger = new();
     private readonly WatchlistService _sut;
 
     public WatchlistServiceTests()
     {
-        _sut = new WatchlistService(_watchlistRepo.Object, _rateSnapshotRepo.Object);
+        _sut = new WatchlistService(_watchlistRepo.Object, _rateSnapshotRepo.Object, _logger.Object);
     }
 
     [Fact]
@@ -30,9 +32,26 @@ public class WatchlistServiceTests
     }
 
     [Fact]
+    public async Task CreateAsync_ValidName_LogsCreation()
+    {
+        // A successful create leaves an Information-level log entry, not just a DTO the
+        // caller might discard.
+        await _sut.CreateAsync("Travel Fund", CancellationToken.None);
+
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task GetAllAsync_ProjectsItemAndAlertRuleCounts()
     {
-        // Backs the FR-004/SC-006 delete confirmation on the Watchlists overview page.
+        // Backs the delete confirmation on the Watchlists overview page.
         var watchlist = new Watchlist
         {
             Id = Guid.NewGuid(),

@@ -9,8 +9,8 @@ function rule(condition: AlertRule["condition"], id: string): AlertRule {
   return { id, watchlistItemId: "item-1", condition, threshold: 1.5, createdAt: "2026-01-01" };
 }
 
-// specs/007-inclusive-alert-conditions FR-007/SC-004 - every condition, old (strict) or new
-// (inclusive), must render as a plain-language label, never the raw enum string.
+// Every condition, old (strict) or new (inclusive), must render as a plain-language label,
+// never the raw enum string.
 describe("AlertList condition display", () => {
   it("renders a plain-language label for all four condition types", () => {
     const rules: AlertRule[] = [

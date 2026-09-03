@@ -10,8 +10,12 @@ interface AlertListProps {
   onEvaluate: (id: string) => Promise<EvaluateResult>;
 }
 
-// FR-023 (list) + FR-020 ("Evaluate Now" per row, result rendered for that row only).
+// Renders the rule list with an "Evaluate Now" action per row, result rendered for that row only.
 export function AlertList({ rules, items, onEvaluate }: AlertListProps) {
+  // Busy-tracks only the rule currently being evaluated (the pattern RateTable's
+  // removingItemId later mirrored) - other rows stay independently interactive while one
+  // evaluates, and results/errors below are keyed the same way so each row renders its own
+  // outcome without touching any other row's state.
   const [evaluating, setEvaluating] = useState<string | null>(null);
   const [results, setResults] = useState<Record<string, EvaluateResult>>({});
   const [errors, setErrors] = useState<Record<string, ApiError>>({});

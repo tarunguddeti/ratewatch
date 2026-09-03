@@ -14,12 +14,11 @@ public class RateSnapshotConfiguration : IEntityTypeConfiguration<RateSnapshot>
         builder.Property(r => r.BaseCurrency).IsRequired().HasMaxLength(CurrencyCode.Length);
         builder.Property(r => r.QuoteCurrency).IsRequired().HasMaxLength(CurrencyCode.Length);
 
-        // constitution Article IV: decimal, never double, end to end.
+        // decimal, never double, end to end.
         builder.Property(r => r.Rate).HasPrecision(MonetaryPrecision.Precision, MonetaryPrecision.Scale);
 
         // Exactly one row per pair, ever - not per pair per day. Makes the upsert idempotent
-        // regardless of when it last ran (data-model.md; docs/architecture.md's Rate Data:
-        // Latest vs. History decisions).
+        // regardless of when it last ran.
         builder.HasIndex(r => new { r.BaseCurrency, r.QuoteCurrency }).IsUnique();
     }
 }

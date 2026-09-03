@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { AlertCondition, AlertRule, EvaluateResult } from "../types/domain";
 
 // The single source every path below is built from, instead of each independently restating
-// "/api/alerts" (specs/004-strong-typing-cleanup/research.md decision 7).
+// "/api/alerts".
 const ALERTS_BASE = "/api/alerts";
 
 export const alertsApi = {

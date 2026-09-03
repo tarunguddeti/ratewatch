@@ -1,14 +1,13 @@
 // Thin typed fetch wrapper - the single place that knows the backend's address. Normalizes
-// every error, HTTP or network, into one ApiError shape before a component ever sees it
-// (docs/architecture.md's Frontend error shape). The frontend never calls Frankfurter
-// directly, under any condition - this is the only HTTP client in the app.
+// every error, HTTP or network, into one ApiError shape before a component ever sees it.
+// The frontend never calls Frankfurter directly, under any condition - this is the only
+// HTTP client in the app.
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
 
 const JSON_CONTENT_TYPE = "application/json";
 
-// Named HTTP-status constants this file (and WatchlistDetailPage.tsx's own 404 check) refer to
-// (specs/004-strong-typing-cleanup - User Story 4).
+// Named HTTP-status constants this file (and WatchlistDetailPage.tsx's own 404 check) refer to.
 const HTTP_NO_CONTENT = 204;
 export const HTTP_NOT_FOUND = 404;
 const HTTP_SERVER_ERROR_THRESHOLD = 500;

@@ -12,7 +12,7 @@ public class AlertEventConfiguration : IEntityTypeConfiguration<AlertEvent>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Message).IsRequired();
 
-        // constitution Article IV: decimal, never double, end to end.
+        // decimal, never double, end to end.
         builder.Property(e => e.Rate).HasPrecision(MonetaryPrecision.Precision, MonetaryPrecision.Scale);
     }
 }

@@ -4,6 +4,7 @@ using CurrencyWatchlist.Application.Repositories;
 using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace CurrencyWatchlist.UnitTests.Services;
@@ -14,13 +15,24 @@ public class AlertServiceTests
     private readonly Mock<IWatchlistItemRepository> _itemRepo = new();
     private readonly Mock<IRateSnapshotRepository> _rateSnapshotRepo = new();
     private readonly Mock<IRateProvider> _rateProvider = new();
+    private readonly Mock<ILogger<AlertService>> _logger = new();
     private readonly AlertService _sut;
     private readonly WatchlistItem _item = new() { Id = Guid.NewGuid(), BaseCurrency = "USD", QuoteCurrency = "AUD" };
 
     public AlertServiceTests()
     {
-        _sut = new AlertService(_alertRuleRepo.Object, _itemRepo.Object, _rateSnapshotRepo.Object, _rateProvider.Object);
+        _sut = new AlertService(_alertRuleRepo.Object, _itemRepo.Object, _rateSnapshotRepo.Object, _rateProvider.Object, _logger.Object);
     }
+
+    private void VerifyLog(LogLevel level, Times times) =>
+        _logger.Verify(
+            l => l.Log(
+                level,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            times);
 
     [Fact]
     public async Task CreateAsync_WatchlistItemNotFound_ThrowsNotFoundException()
@@ -30,6 +42,17 @@ public class AlertServiceTests
         var act = () => _sut.CreateAsync(Guid.NewGuid(), AlertCondition.Above, 1.5m, CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task CreateAsync_Valid_LogsCreation()
+    {
+        // A successful create leaves an Information-level log entry.
+        _itemRepo.Setup(r => r.GetByIdAsync(_item.Id, It.IsAny<CancellationToken>())).ReturnsAsync(_item);
+
+        await _sut.CreateAsync(_item.Id, AlertCondition.Above, 1.5m, CancellationToken.None);
+
+        VerifyLog(LogLevel.Information, Times.Once());
     }
 
     [Fact]
@@ -45,8 +68,7 @@ public class AlertServiceTests
     [Fact]
     public async Task EvaluateAsync_RateExactlyEqualsThreshold_NotTriggered()
     {
-        // The specific boundary docs/architecture.md calls out as worth a dedicated test:
-        // rate == threshold must never count as "above" or "below" (constitution Article IV).
+        // rate == threshold must never count as "above" or "below".
         var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = AlertCondition.Above, Threshold = 1.5m };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
@@ -76,6 +98,9 @@ public class AlertServiceTests
 
         result.Triggered.Should().Be(expectedTriggered);
         _alertRuleRepo.Verify(r => r.AddEventAsync(It.IsAny<AlertEvent>(), It.IsAny<CancellationToken>()), expectedTriggered ? Times.Once : Times.Never);
+
+        // A triggering evaluation logs an Information-level entry; a non-triggering one does not.
+        VerifyLog(LogLevel.Information, expectedTriggered ? Times.Once() : Times.Never());
     }
 
     [Theory]
@@ -86,7 +111,7 @@ public class AlertServiceTests
         // The inverse of EvaluateAsync_RateExactlyEqualsThreshold_NotTriggered above:
         // AboveOrEqual/BelowOrEqual are explicit inclusive counterparts to Above/Below, so the
         // same rate == threshold boundary that never triggers Above/Below must always trigger
-        // these two (specs/007-inclusive-alert-conditions).
+        // these two.
         var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = condition, Threshold = threshold };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider
@@ -121,8 +146,8 @@ public class AlertServiceTests
     [Fact]
     public async Task EvaluateAsync_NoPriorRefreshNeeded_FetchesLiveAndUpsertsAsSideEffect()
     {
-        // FR-020/021 - evaluate obtains the rate itself; it never depends on a prior
-        // refresh, and its result also becomes the pair's new latest known rate.
+        // Evaluate obtains the rate itself; it never depends on a prior refresh, and its
+        // result also becomes the pair's new latest known rate.
         var rule = new AlertRule { Id = Guid.NewGuid(), WatchlistItem = _item, Condition = AlertCondition.Above, Threshold = 1.0m };
         _alertRuleRepo.Setup(r => r.GetByIdWithItemAsync(rule.Id, It.IsAny<CancellationToken>())).ReturnsAsync(rule);
         _rateProvider

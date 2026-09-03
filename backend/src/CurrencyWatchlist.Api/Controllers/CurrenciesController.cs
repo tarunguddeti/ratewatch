@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CurrencyWatchlist.Api.Controllers;
 
-/// <summary>Not in the original brief - added to back the currency dropdown so entry can be
-/// selection-only instead of free text (FR-005). A thin proxy to the provider's own reference
-/// endpoint, not a new database table.</summary>
+/// <summary>Added to back the currency dropdown so entry can be selection-only instead of free
+/// text. A thin proxy to the provider's own reference endpoint, not a new database table.</summary>
 [ApiController]
 [Route("api/currencies")]
 public class CurrenciesController(IRateProvider rateProvider) : ControllerBase

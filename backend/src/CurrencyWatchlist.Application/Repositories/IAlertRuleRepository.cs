@@ -14,7 +14,7 @@ public interface IAlertRuleRepository
 
     Task AddAsync(AlertRule rule, CancellationToken ct);
 
-    /// <summary>FR-022 - written only when an evaluation confirms the condition is
-    /// satisfied; never called for a non-triggering evaluation.</summary>
+    /// <summary>Written only when an evaluation confirms the condition is satisfied; never
+    /// called for a non-triggering evaluation.</summary>
     Task AddEventAsync(AlertEvent alertEvent, CancellationToken ct);
 }

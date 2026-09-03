@@ -20,8 +20,8 @@ function renderCard(onDelete: (id: string) => Promise<void>) {
   );
 }
 
-// specs/006-fix-ui-loading-bugs FR-003 - repeated clicks on Delete while a request is already
-// in flight must never fire a second onDelete call for the same watchlist.
+// Repeated clicks on Delete while a request is already in flight must never fire a second
+// onDelete call for the same watchlist.
 describe("WatchlistCard delete busy state", () => {
   afterEach(() => {
     vi.restoreAllMocks();

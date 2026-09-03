@@ -1,8 +1,7 @@
 namespace CurrencyWatchlist.Application.RateProvider;
 
 /// <summary>Why a rate-fetch failed. Frankfurter unreachable/timeout/5xx maps to Unavailable;
-/// a pair the provider doesn't recognize maps to UnsupportedPair
-/// (docs/architecture.md's failure taxonomy).</summary>
+/// a pair the provider doesn't recognize maps to UnsupportedPair.</summary>
 public enum RateFailureReason
 {
     Unavailable,
@@ -13,7 +12,7 @@ public enum RateFailureReason
 /// over every distinct pair and must keep going after one fails. Single-call consumers
 /// (AlertService, RateService's history/latest reads) unwrap this back into the shared
 /// exception vocabulary at their own layer - the Result type itself stays a loop-friendly
-/// detail (docs/architecture.md's Error Handling & Observability decisions).</summary>
+/// detail.</summary>
 public record RateResult
 {
     public bool IsSuccess { get; private init; }

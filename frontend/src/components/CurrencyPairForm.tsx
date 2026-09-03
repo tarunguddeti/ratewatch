@@ -7,10 +7,9 @@ interface CurrencyPairFormProps {
   onAdd: (baseCurrency: string, quoteCurrency: string) => Promise<void>;
 }
 
-// FR-006/007/009 - the backend re-validates everything regardless (docs/architecture.md's
-// client-side-validation-is-a-shortcut-not-the-source-of-truth stance), so this component
+// The backend re-validates everything regardless of client-side checks, so this component
 // just surfaces whatever the backend actually says (409 duplicate, 400 base==quote or
-// unsupported currency) as an inline field error (NFR-002).
+// unsupported currency) as an inline field error.
 export function CurrencyPairForm({ onAdd }: CurrencyPairFormProps) {
   const [baseCurrency, setBaseCurrency] = useState("");
   const [quoteCurrency, setQuoteCurrency] = useState("");

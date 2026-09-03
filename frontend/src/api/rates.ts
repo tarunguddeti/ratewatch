@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { RateSnapshot, RefreshSummary } from "../types/domain";
 
 // The single source every path below is built from, instead of each independently restating
-// "/api/rates" (specs/004-strong-typing-cleanup/research.md decision 7).
+// "/api/rates".
 const RATES_BASE = "/api/rates";
 
 export const ratesApi = {

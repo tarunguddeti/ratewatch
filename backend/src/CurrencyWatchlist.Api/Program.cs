@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // The trace-ID scope only actually shows up in the terminal if the console logger is told to
 // print scope values - BeginScope attaches it to the pipeline correctly regardless, but the
-// default provider stays silent without this one line (docs/architecture.md:300-307).
+// default provider stays silent without this one line.
 builder.Logging.AddSimpleConsole(options => options.IncludeScopes = true);
 
 // Add services to the container.
@@ -23,9 +23,8 @@ builder.Services.AddControllers().ConfigureApiBehaviorOptions(options =>
     // errors occurred."), which would replace today's specific per-field messages (e.g.
     // "Watchlist name is required.") with that generic sentence everywhere a component reads
     // error.detail ?? error.title. Keep Errors (the frontend's ApiError.fieldErrors already
-    // parses it - docs/architecture.md's Frontend error shape) but add a specific Detail on
-    // top, additive to the automatic shape rather than replacing it
-    // (specs/003-dataannotations-validation/research.md decision 6).
+    // parses it) but add a specific Detail on top, additive to the automatic shape rather than
+    // replacing it.
     options.InvalidModelStateResponseFactory = context =>
     {
         // Distinct() because a single IValidatableObject failure attached to more than one
@@ -70,8 +69,7 @@ builder.Services.AddScoped<AlertService>();
 
 // Typed HttpClient: FrankfurterRateProvider is the only place that knows Infrastructure talks
 // to a third party at all. ~5s timeout, single retry on transient failure is implemented
-// inside the provider itself - no Polly, no circuit breaker, at this scale
-// (docs/architecture.md:1018).
+// inside the provider itself - no Polly, no circuit breaker, at this scale.
 var rateProviderBaseUrl = builder.Configuration["RateProvider:BaseUrl"]
     ?? throw new InvalidOperationException("RateProvider:BaseUrl is not configured.");
 var rateProviderTimeout = TimeSpan.FromSeconds(5);
@@ -81,8 +79,7 @@ builder.Services.AddHttpClient<IRateProvider, FrankfurterRateProvider>(client =>
     client.Timeout = rateProviderTimeout;
 });
 
-// One named CORS policy scoped to the frontend's exact origin, never AllowAnyOrigin
-// (constitution Article IX).
+// One named CORS policy scoped to the frontend's exact origin, never AllowAnyOrigin.
 const string CorsPolicyName = "Frontend";
 var allowedOrigin = builder.Configuration["Cors:AllowedOrigin"]
     ?? throw new InvalidOperationException("Cors:AllowedOrigin is not configured.");
@@ -95,8 +92,8 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Migrations auto-apply on startup rather than requiring a manual CLI step, and one sample
-// watchlist is seeded on first run if empty - a take-home convenience, not a production
-// pattern (docs/architecture.md:1020,1022; constitution Build Order step 3).
+// watchlist is seeded on first run if empty - a development convenience, not a production
+// pattern.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();

@@ -12,14 +12,14 @@ public class AlertRuleConfiguration : IEntityTypeConfiguration<AlertRule>
         builder.HasKey(r => r.Id);
 
         // Stored as the same "Above"/"Below" text the column already held before Condition
-        // became a real enum (specs/004-strong-typing-cleanup/research.md decision 3).
+        // became a real enum.
         builder.Property(r => r.Condition).HasConversion<string>();
 
-        // constitution Article IV: decimal, never double, end to end.
+        // decimal, never double, end to end.
         builder.Property(r => r.Threshold).HasPrecision(MonetaryPrecision.Precision, MonetaryPrecision.Scale);
 
-        // FR-018: no uniqueness constraint on WatchlistItemId - multiple rules per item,
-        // including opposing conditions, are explicitly allowed.
+        // No uniqueness constraint on WatchlistItemId - multiple rules per item, including
+        // opposing conditions, are explicitly allowed.
 
         builder.HasMany(r => r.Events)
             .WithOne(e => e.AlertRule)

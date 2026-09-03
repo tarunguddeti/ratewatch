@@ -2,13 +2,14 @@ using CurrencyWatchlist.Application.Dtos;
 using CurrencyWatchlist.Application.Exceptions;
 using CurrencyWatchlist.Application.Repositories;
 using CurrencyWatchlist.Domain.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace CurrencyWatchlist.Application.Services;
 
-public class WatchlistService(IWatchlistRepository watchlistRepo, IRateSnapshotRepository rateSnapshotRepo)
+public class WatchlistService(IWatchlistRepository watchlistRepo, IRateSnapshotRepository rateSnapshotRepo, ILogger<WatchlistService> logger)
 {
-    /// <summary>FR-001 - blank/invalid names are rejected before this method ever runs, via
-    /// [Required] on CreateWatchlistRequest.Name (Api/Requests/WatchlistRequests.cs).</summary>
+    /// <summary>Blank/invalid names are rejected before this method ever runs, via [Required]
+    /// on CreateWatchlistRequest.Name (Api/Requests/WatchlistRequests.cs).</summary>
     public async Task<WatchlistDto> CreateAsync(string name, CancellationToken ct)
     {
         var watchlist = new Watchlist
@@ -19,22 +20,23 @@ public class WatchlistService(IWatchlistRepository watchlistRepo, IRateSnapshotR
         };
 
         await watchlistRepo.AddAsync(watchlist, ct);
+        logger.LogInformation("Watchlist {WatchlistId} created", watchlist.Id);
         return ToDto(watchlist);
     }
 
-    /// <summary>FR-002. Each entry's itemCount/alertRuleCount back the "this also removes N
-    /// pairs and M alert rules" confirmation on WatchlistCard (FR-004/SC-006) - the Watchlists
-    /// overview is the only screen where whole-watchlist deletion happens, so this is the only
-    /// place that data can come from without an N+1 call per card.</summary>
+    /// <summary>Each entry's itemCount/alertRuleCount back the "this also removes N pairs and
+    /// M alert rules" confirmation on WatchlistCard - the Watchlists overview is the only
+    /// screen where whole-watchlist deletion happens, so this is the only place that data can
+    /// come from without an N+1 call per card.</summary>
     public async Task<IReadOnlyList<WatchlistDto>> GetAllAsync(CancellationToken ct)
     {
         var watchlists = await watchlistRepo.GetAllAsync(ct);
         return watchlists.Select(ToDto).ToList();
     }
 
-    /// <summary>FR-003 - tracked pairs together with each pair's latest known rate and defined
-    /// alert rules. The rate join happens here, not in the repository, since RateSnapshot has
-    /// no FK to WatchlistItem by design (data-model.md).</summary>
+    /// <summary>Tracked pairs together with each pair's latest known rate and defined alert
+    /// rules. The rate join happens here, not in the repository, since RateSnapshot has no FK
+    /// to WatchlistItem by design.</summary>
     public async Task<WatchlistDetailDto> GetDetailAsync(Guid id, CancellationToken ct)
     {
         var watchlist = await watchlistRepo.GetByIdAsync(id, ct)
@@ -55,10 +57,9 @@ public class WatchlistService(IWatchlistRepository watchlistRepo, IRateSnapshotR
         return new WatchlistDetailDto(watchlist.Id, watchlist.Name, watchlist.CreatedAt, items);
     }
 
-    /// <summary>FR-004 - cascades to every tracked pair, their alert rules, and those rules'
-    /// recorded trigger events (data-model.md's cross-entity invariants). The "this removes N
-    /// pairs and M rules" warning itself is a client-side UX step before this call is ever
-    /// made (contracts/api-contracts.md).</summary>
+    /// <summary>Cascades to every tracked pair, their alert rules, and those rules' recorded
+    /// trigger events. The "this removes N pairs and M rules" warning itself is a client-side
+    /// UX step before this call is ever made.</summary>
     public async Task DeleteAsync(Guid id, CancellationToken ct)
     {
         var watchlist = await watchlistRepo.GetByIdAsync(id, ct)

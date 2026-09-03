@@ -45,11 +45,10 @@ public class RateRefreshFlowTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    // The date-range validation task (T036) targeted RateService, but that logic lives at
-    // the controller boundary by design (contracts/api-contracts.md, RatesController.GetHistory)
-    // - reallocated here since WebApplicationFactory is the natural place to verify
-    // controller-level HTTP status codes end to end, without introducing an IRateService
-    // interface purely for controller-unit-test mockability (constitution Article III).
+    // Date-range validation logic lives at the controller boundary by design
+    // (RatesController.GetHistory) - covered here since WebApplicationFactory is the natural
+    // place to verify controller-level HTTP status codes end to end, without introducing an
+    // IRateService interface purely for controller-unit-test mockability.
 
     [Fact]
     public async Task GetHistory_FutureEndDate_Returns400()
@@ -81,8 +80,8 @@ public class RateRefreshFlowTests : IClassFixture<CustomWebApplicationFactory>
         points.Should().HaveCount(5);
     }
 
-    // US1 (specs/005-ratesnapshot-cache-cleanup/spec.md) - at most one RateSnapshot row can
-    // ever exist per pair, and refreshing an already-cached pair updates that row in place.
+    // At most one RateSnapshot row can ever exist per pair, and refreshing an already-cached
+    // pair updates that row in place.
 
     [Fact]
     public async Task Refresh_SamePairTwice_UpdatesOneRowInPlace_DoesNotAccumulate()
@@ -136,8 +135,8 @@ public class RateRefreshFlowTests : IClassFixture<CustomWebApplicationFactory>
         rateA.FetchedAt.Should().Be(rateB.FetchedAt);
     }
 
-    // US2 (specs/005-ratesnapshot-cache-cleanup/spec.md) - /rates/latest and /rates/refresh
-    // carry full date-and-time precision; /rates/history's wire format is untouched.
+    // /rates/latest and /rates/refresh carry full date-and-time precision; /rates/history's
+    // wire format is untouched.
 
     [Fact]
     public async Task Refresh_ThenGetLatest_SourceTimestampCarriesFullDateTimePrecision()
@@ -153,7 +152,7 @@ public class RateRefreshFlowTests : IClassFixture<CustomWebApplicationFactory>
 
         // A bare ISO date ("2026-02-23") is exactly 10 characters; a full ISO date-time
         // ("2026-02-23T00:00:00") is longer - confirms the response was not truncated back to
-        // date-only (spec.md US2 Acceptance Scenario 2).
+        // date-only.
         latestTimestamp!.Length.Should().BeGreaterThan(10, "the latest-rate response must carry a full timestamp, not just a date");
         DateTime.Parse(latestTimestamp).Should().NotBe(default);
     }
@@ -165,8 +164,8 @@ public class RateRefreshFlowTests : IClassFixture<CustomWebApplicationFactory>
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var historyTimestamp = json.RootElement[0].GetProperty("sourceTimestamp").GetString();
 
-        // contracts/rates-history.md: history's wire format must be byte-for-byte unchanged -
-        // still a bare "YYYY-MM-DD" date, exactly 10 characters, never widened (FR-007).
+        // History's wire format must be byte-for-byte unchanged - still a bare "YYYY-MM-DD"
+        // date, exactly 10 characters, never widened.
         historyTimestamp.Should().HaveLength(10);
         historyTimestamp.Should().MatchRegex(@"^\d{4}-\d{2}-\d{2}$");
     }

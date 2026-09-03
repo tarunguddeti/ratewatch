@@ -6,13 +6,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CurrencyWatchlist.IntegrationTests;
 
-/// <summary>US3 (specs/005-ratesnapshot-cache-cleanup/spec.md) - the migration that narrows
-/// RateSnapshot's unique key must apply cleanly against a database that already accumulated
-/// the old per-day-per-pair rows, and must leave the table in the new, empty, one-row-per-pair
-/// shape rather than failing on a duplicate-key violation. This intentionally bypasses
-/// CustomWebApplicationFactory (which auto-migrates a fresh database to the latest migration on
-/// startup) - the whole point here is controlling exactly which migration has been applied
-/// before the legacy data is seeded.</summary>
+/// <summary>The migration that narrows RateSnapshot's unique key must apply cleanly against a
+/// database that already accumulated the old per-day-per-pair rows, and must leave the table
+/// in the new, empty, one-row-per-pair shape rather than failing on a duplicate-key violation.
+/// This intentionally bypasses CustomWebApplicationFactory (which auto-migrates a fresh
+/// database to the latest migration on startup) - the whole point here is controlling exactly
+/// which migration has been applied before the legacy data is seeded.</summary>
 public class MigrationTests : IDisposable
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"ratewatch-migration-test-{Guid.NewGuid():N}.db");

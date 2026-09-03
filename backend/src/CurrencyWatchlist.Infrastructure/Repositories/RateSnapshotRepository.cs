@@ -9,8 +9,7 @@ public class RateSnapshotRepository(AppDbContext db) : IRateSnapshotRepository
 {
     public async Task<RateSnapshot?> GetLatestAsync(string baseCurrency, string quoteCurrency, CancellationToken ct) =>
         // Exactly one row can exist per pair (unique index on (BaseCurrency, QuoteCurrency)),
-        // so this is a direct lookup, not a "find the newest of possibly many" query
-        // (specs/005-ratesnapshot-cache-cleanup/data-model.md).
+        // so this is a direct lookup, not a "find the newest of possibly many" query.
         await db.RateSnapshots
             .FirstOrDefaultAsync(r => r.BaseCurrency == baseCurrency && r.QuoteCurrency == quoteCurrency, ct);
 
@@ -26,9 +25,8 @@ public class RateSnapshotRepository(AppDbContext db) : IRateSnapshotRepository
         var bases = pairList.Select(p => p.Base).Distinct().ToList();
 
         // Filtered to the relevant base currencies at the DB level. No in-memory grouping
-        // needed anymore - the unique (BaseCurrency, QuoteCurrency) index guarantees at most
-        // one row per pair, so every row returned here already is that pair's latest
-        // (specs/005-ratesnapshot-cache-cleanup/data-model.md).
+        // needed - the unique (BaseCurrency, QuoteCurrency) index guarantees at most one row
+        // per pair, so every row returned here already is that pair's latest.
         var candidates = await db.RateSnapshots
             .Where(r => bases.Contains(r.BaseCurrency))
             .AsNoTracking()
@@ -42,11 +40,11 @@ public class RateSnapshotRepository(AppDbContext db) : IRateSnapshotRepository
 
     public async Task UpsertAsync(string baseCurrency, string quoteCurrency, decimal rate, DateTime sourceTimestamp, DateTime fetchedAt, CancellationToken ct)
     {
-        // Single atomic statement, never a check-then-insert sequence (constitution Article
-        // IV) - closes the double-click/two-tab race on the unique (BaseCurrency,
-        // QuoteCurrency) index. On conflict, Id is left untouched since it's not in the SET
-        // clause, so the original row's identity survives. Idempotent regardless of when it
-        // last ran - there is exactly one row per pair, ever.
+        // Single atomic statement, never a check-then-insert sequence - closes the
+        // double-click/two-tab race on the unique (BaseCurrency, QuoteCurrency) index. On
+        // conflict, Id is left untouched since it's not in the SET clause, so the original
+        // row's identity survives. Idempotent regardless of when it last ran - there is
+        // exactly one row per pair, ever.
         await db.Database.ExecuteSqlInterpolatedAsync(
             $@"INSERT INTO RateSnapshots (Id, BaseCurrency, QuoteCurrency, Rate, SourceTimestamp, FetchedAt)
                VALUES ({Guid.NewGuid()}, {baseCurrency}, {quoteCurrency}, {rate}, {sourceTimestamp}, {fetchedAt})

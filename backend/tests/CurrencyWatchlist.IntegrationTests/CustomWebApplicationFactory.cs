@@ -13,8 +13,9 @@ namespace CurrencyWatchlist.IntegrationTests;
 
 /// <summary>Points AppDbContext at a real, temp-file SQLite database (verifies actual EF Core
 /// behavior a mock can't - migrations, constraints, cascades) and IRateProvider at
-/// FakeFrankfurterHandler instead of the live API, per constitution Article X. Each instance
-/// gets its own temp file so tests don't interfere with each other's data.</summary>
+/// FakeFrankfurterHandler instead of the live API, so the suite never depends on a live
+/// third party's uptime to pass. Each instance gets its own temp file so tests don't
+/// interfere with each other's data.</summary>
 public class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
     private readonly string _dbPath = Path.Combine(Path.GetTempPath(), $"ratewatch-test-{Guid.NewGuid():N}.db");

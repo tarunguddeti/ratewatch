@@ -6,13 +6,11 @@ namespace CurrencyWatchlist.Api.Middleware;
 /// <summary>The single shared error-response mechanism at the HTTP boundary. Log level
 /// follows whether the failure is expected, not whether it's 4xx/5xx: Warning (no stack
 /// trace) for anything the system is designed to hand back to a caller, Error (full
-/// exception + trace ID) for provider outages and anything unhandled
-/// (docs/architecture.md's Error Handling &amp; Observability decisions).</summary>
+/// exception + trace ID) for provider outages and anything unhandled.</summary>
 public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<ExceptionHandlingMiddleware> logger)
 {
     /// <summary>The single source of truth for this content type - Program.cs's
-    /// InvalidModelStateResponseFactory previously restated it independently
-    /// (specs/004-strong-typing-cleanup/research.md decision 6).</summary>
+    /// InvalidModelStateResponseFactory previously restated it independently.</summary>
     public const string ProblemJson = "application/problem+json";
 
     public async Task InvokeAsync(HttpContext context)

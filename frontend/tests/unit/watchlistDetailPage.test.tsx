@@ -79,9 +79,9 @@ describe("WatchlistDetailPage back navigation", () => {
   });
 });
 
-// specs/006-fix-ui-loading-bugs FR-001 - removing a currency pair (or any other mutation) must
-// not blank the already-rendered rate table back to the full-page "Loading watchlist…" message;
-// only a small localized indicator should reflect the in-progress state.
+// Removing a currency pair (or any other mutation) must not blank the already-rendered rate
+// table back to the full-page "Loading watchlist…" message; only a small localized indicator
+// should reflect the in-progress state.
 describe("WatchlistDetailPage keeps content visible during a mutation", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

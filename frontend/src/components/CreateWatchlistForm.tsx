@@ -6,6 +6,9 @@ interface CreateWatchlistFormProps {
   onCreate: (name: string) => Promise<void>;
 }
 
+// No client-side validation beyond the input's own required attribute; the backend's own
+// [Required] check on the name is the source of truth, so this component just surfaces
+// whatever error it returns inline.
 export function CreateWatchlistForm({ onCreate }: CreateWatchlistFormProps) {
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);

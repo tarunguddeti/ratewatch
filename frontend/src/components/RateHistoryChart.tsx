@@ -9,8 +9,8 @@ interface RateHistoryChartProps {
   quoteCurrency: string;
 }
 
-// FR-015 - a small, single-pair line chart, not a multi-pair dashboard (NFR-003). Defaults to
-// the last 30 days (the backend applies that default when from/to are omitted).
+// A small, single-pair line chart, not a multi-pair dashboard. Defaults to the last 30 days
+// (the backend applies that default when from/to are omitted).
 export function RateHistoryChart({ baseCurrency, quoteCurrency }: RateHistoryChartProps) {
   const [data, setData] = useState<RateSnapshot[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,9 @@ export function RateHistoryChart({ baseCurrency, quoteCurrency }: RateHistoryCha
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  // specs/006-fix-ui-loading-bugs FR-006 - identifies the most recently started `load()` call
-  // so a response from a superseded range request is discarded instead of overwriting the
-  // chart with data for a range the user no longer has selected.
+  // Identifies the most recently started `load()` call so a response from a superseded range
+  // request is discarded instead of overwriting the chart with data for a range the user no
+  // longer has selected.
   const latestRequestId = useRef(0);
 
   const load = async () => {

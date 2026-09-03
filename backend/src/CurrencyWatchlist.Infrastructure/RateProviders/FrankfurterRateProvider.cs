@@ -6,17 +6,16 @@ using Microsoft.Extensions.Logging;
 
 namespace CurrencyWatchlist.Infrastructure.RateProviders;
 
-/// <summary>Targets api.frankfurter.dev/v2, verified directly against the live API (not the
-/// v1 URL shown literally in the brief). Endpoint shapes confirmed against the real API's
-/// OpenAPI spec during implementation: GET /rates?base=&amp;quotes=[&amp;from=&amp;to=] for
-/// both latest and historical rates (docs/architecture.md's diagrams), GET /currencies for
-/// the supported-currency list.</summary>
+/// <summary>Targets api.frankfurter.dev/v2, verified directly against the live API. Endpoint
+/// shapes confirmed against the real API's OpenAPI spec during implementation: GET
+/// /rates?base=&amp;quotes=[&amp;from=&amp;to=] for both latest and historical rates, GET
+/// /currencies for the supported-currency list.</summary>
 public class FrankfurterRateProvider : IRateProvider
 {
     private const string CurrenciesCacheKey = "frankfurter:supported-currencies";
 
     /// <summary>How long the supported-currency list is cached before the next request
-    /// re-fetches it (specs/004-strong-typing-cleanup - User Story 3).</summary>
+    /// re-fetches it.</summary>
     private static readonly TimeSpan CurrenciesCacheDuration = TimeSpan.FromHours(24);
 
     private readonly HttpClient _http;
@@ -43,9 +42,8 @@ public class FrankfurterRateProvider : IRateProvider
         var (rates, failure) = await FetchRatesAsync(url, ct);
         if (failure is not null)
         {
-            // A single bad currency under a base fails that base's entire batch on v2
-            // (docs/architecture.md's Refresh Flow decisions) - every requested quote in
-            // this batch gets the same failure reason.
+            // A single bad currency under a base fails that base's entire batch on v2 - every
+            // requested quote in this batch gets the same failure reason.
             return quoteCurrencies.Select(q => RateResult.Error(failure.Value, q)).ToList();
         }
 
@@ -57,7 +55,7 @@ public class FrankfurterRateProvider : IRateProvider
                     ? RateResult.Error(RateFailureReason.UnsupportedPair, q)
                     // Frankfurter's "date" field never carries a time-of-day, so this normalizes
                     // to midnight UTC on that date rather than fabricating precision the source
-                    // never provided (specs/005-ratesnapshot-cache-cleanup/research.md Decision 3).
+                    // never provided.
                     : RateResult.Ok(match.Rate, match.Date.ToDateTime(TimeOnly.MinValue), q);
             })
             .ToList();
@@ -94,7 +92,7 @@ public class FrankfurterRateProvider : IRateProvider
                 // No try/catch swallowing the failure here beyond translating it to our own
                 // exception type - if the list can't be fetched, this propagates to the
                 // middleware as a 502. A currency that can't be verified is treated as not
-                // verified, not as accepted (docs/architecture.md:1053-1059).
+                // verified, not as accepted.
                 throw new RateProviderUnavailableException("Could not reach the currency provider.");
             }
 
@@ -145,8 +143,7 @@ public class FrankfurterRateProvider : IRateProvider
     }
 
     /// <summary>~5s HttpClient timeout (configured on the client itself in Program.cs) and a
-    /// single retry on transient failure - no Polly, no circuit breaker, at this scale
-    /// (docs/architecture.md:1018).</summary>
+    /// single retry on transient failure - no Polly, no circuit breaker, at this scale.</summary>
     private async Task<HttpResponseMessage> SendWithRetryAsync(string relativeUrl, CancellationToken ct)
     {
         try

@@ -5,9 +5,9 @@ using System.Text.Json;
 namespace CurrencyWatchlist.IntegrationTests;
 
 /// <summary>Stands in for api.frankfurter.dev/v2 in every integration test - the suite must
-/// never depend on a live third party's uptime to pass (constitution Article X). Wired in as
-/// the typed HttpClient's primary handler via CustomWebApplicationFactory, which is the
-/// in-process equivalent of pointing RateProvider__BaseUrl at a local mock server.</summary>
+/// never depend on a live third party's uptime to pass. Wired in as the typed HttpClient's
+/// primary handler via CustomWebApplicationFactory, which is the in-process equivalent of
+/// pointing RateProvider__BaseUrl at a local mock server.</summary>
 public class FakeFrankfurterHandler : HttpMessageHandler
 {
     /// <summary>Rate to return for any /rates request, keyed by "BASE/QUOTE". Currency codes
@@ -22,8 +22,7 @@ public class FakeFrankfurterHandler : HttpMessageHandler
     public bool SimulateUnavailable { get; set; }
 
     /// <summary>How many times /currencies has been served - lets a test assert "the provider
-    /// was never called" for a request that should be rejected before reaching this handler
-    /// (specs/003-dataannotations-validation/quickstart.md Step 2, SC-002).</summary>
+    /// was never called" for a request that should be rejected before reaching this handler.</summary>
     public int CurrenciesCallCount { get; private set; }
 
     private static readonly IReadOnlyDictionary<string, string> SupportedCurrencies = new Dictionary<string, string>

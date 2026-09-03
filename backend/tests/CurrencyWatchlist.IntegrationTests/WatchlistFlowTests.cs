@@ -60,7 +60,7 @@ public class WatchlistFlowTests : IClassFixture<CustomWebApplicationFactory>
         secondAttempt.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    // Shape-check rejections (specs/003-dataannotations-validation - User Story 1).
+    // Shape-check rejections.
 
     [Fact]
     public async Task CreateWatchlist_BlankName_Returns400WithSpecificDetailAndNoWatchlistCreated()

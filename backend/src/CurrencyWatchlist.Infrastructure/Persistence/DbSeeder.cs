@@ -5,7 +5,7 @@ namespace CurrencyWatchlist.Infrastructure.Persistence;
 
 /// <summary>Seeds one sample watchlist on first run so a reviewer's first load isn't a blank
 /// app - deliberately with no RateSnapshot and no AlertRule, so the first thing shown is the
-/// "Not fetched yet" empty state rather than fabricated data (docs/architecture.md:1022).</summary>
+/// "Not fetched yet" empty state rather than fabricated data.</summary>
 public static class DbSeeder
 {
     public static async Task SeedAsync(AppDbContext db)

@@ -32,8 +32,8 @@ export function useWatchlists() {
 
   // create/remove intentionally don't catch into this hook's shared `error` state - a
   // create-form failure needs an inline field error, and a delete failure needs a
-  // non-blocking banner, not a page-level error replacing the whole list
-  // (docs/architecture.md's three UI error treatments). Callers catch these themselves.
+  // non-blocking banner, not a page-level error replacing the whole list. Callers catch these
+  // themselves.
   //
   // `mutating` tracks these in-flight calls (including their trailing reload) instead of
   // `loading`, so the already-rendered list stays visible throughout.

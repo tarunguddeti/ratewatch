@@ -3,8 +3,8 @@ import { currenciesApi } from "../api/currencies";
 import type { ApiError } from "../api/client";
 import type { Currency } from "../types/domain";
 
-// Fetch once, module-level cache - no React Query needed for one static list
-// (docs/architecture.md's Frontend section). Shared across every CurrencySelect on the page.
+// Fetch once, module-level cache - no React Query needed for one static list. Shared across
+// every CurrencySelect on the page.
 let cache: Currency[] | null = null;
 let inFlight: Promise<Currency[]> | null = null;
 

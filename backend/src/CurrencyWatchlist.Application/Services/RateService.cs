@@ -2,20 +2,21 @@ using CurrencyWatchlist.Application.Dtos;
 using CurrencyWatchlist.Application.Exceptions;
 using CurrencyWatchlist.Application.RateProvider;
 using CurrencyWatchlist.Application.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace CurrencyWatchlist.Application.Services;
 
 public class RateService(
     IWatchlistItemRepository itemRepo,
     IRateSnapshotRepository rateSnapshotRepo,
-    IRateProvider rateProvider)
+    IRateProvider rateProvider,
+    ILogger<RateService> logger)
 {
-    /// <summary>FR-011/012/013 - global across all watchlists, batched by base currency
-    /// (one Frankfurter call per distinct base, not per pair). Fetch concurrently, write
-    /// sequentially: the per-base calls are independent I/O, but DbContext isn't thread-safe,
-    /// so the write phase happens one upsert at a time, each independently fault-isolated -
-    /// one failed write never discards other already-fetched, already-successful results
-    /// (docs/architecture.md:551-571).</summary>
+    /// <summary>Global across all watchlists, batched by base currency (one Frankfurter call
+    /// per distinct base, not per pair). Fetch concurrently, write sequentially: the per-base
+    /// calls are independent I/O, but DbContext isn't thread-safe, so the write phase happens
+    /// one upsert at a time, each independently fault-isolated - one failed write never
+    /// discards other already-fetched, already-successful results.</summary>
     public async Task<RefreshSummaryDto> RefreshAllAsync(CancellationToken ct)
     {
         var pairsByBase = await itemRepo.GetDistinctPairsGroupedByBaseAsync(ct);
@@ -49,20 +50,23 @@ public class RateService(
                 await rateSnapshotRepo.UpsertAsync(baseCurrency, result.Quote!, result.Rate, result.SourceTimestamp, fetchedAt, ct);
                 refreshed.Add(new RateSnapshotDto(baseCurrency, result.Quote!, result.Rate, result.SourceTimestamp, fetchedAt));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // A write failure lands in failed[] exactly like a fetch failure - same
                 // response shape, same frontend treatment - rather than that one write
                 // failure silently discarding every other already-fetched result still
-                // waiting to be saved (docs/architecture.md:1075).
+                // waiting to be saved. Logged as a Warning, not just swallowed, so a
+                // recurring save failure is diagnosable from the log alone.
+                logger.LogWarning(ex, "Failed to save rate for {Pair} during refresh", pairLabel);
                 failed.Add(new FailedPairDto(pairLabel, "Could not save this rate."));
             }
         }
 
+        logger.LogInformation("Refresh completed: {SucceededCount} succeeded, {FailedCount} failed", refreshed.Count, failed.Count);
         return new RefreshSummaryDto(refreshed, failed);
     }
 
-    /// <summary>FR-014 - a pure cache read, never calls the provider.</summary>
+    /// <summary>A pure cache read, never calls the provider.</summary>
     public async Task<RateSnapshotDto> GetLatestAsync(string baseCurrency, string quoteCurrency, CancellationToken ct)
     {
         var snapshot = await rateSnapshotRepo.GetLatestAsync(baseCurrency, quoteCurrency, ct)
@@ -71,9 +75,8 @@ public class RateService(
         return new RateSnapshotDto(snapshot.BaseCurrency, snapshot.QuoteCurrency, snapshot.Rate, snapshot.SourceTimestamp, snapshot.FetchedAt);
     }
 
-    /// <summary>FR-015 - proxied live, never touches RateSnapshot. Range validation
-    /// (FR-016) happens at the controller boundary before this is ever called
-    /// (contracts/api-contracts.md), so this method trusts its inputs.</summary>
+    /// <summary>Proxied live, never touches RateSnapshot. Range validation happens at the
+    /// controller boundary before this is ever called, so this method trusts its inputs.</summary>
     public async Task<IReadOnlyList<RateHistoryPointDto>> GetHistoryAsync(string baseCurrency, string quoteCurrency, DateOnly from, DateOnly to, CancellationToken ct)
     {
         var result = await rateProvider.GetHistoryAsync(baseCurrency, quoteCurrency, from, to, ct);

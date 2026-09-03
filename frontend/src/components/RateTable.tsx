@@ -5,18 +5,17 @@ import styles from "./RateTable.module.css";
 interface RateTableProps {
   items: WatchlistItemDetail[];
   onRemoveItem: (itemId: string) => Promise<void>;
-  /** Alert rule count per item, when known (populated once alerts are loaded - Phase 8 US3
-   * wires this in). Undefined for an item means "not known yet," not "zero." */
+  /** Alert rule count per item, when known (populated once alerts are loaded). Undefined for
+   * an item means "not known yet," not "zero." */
   alertCountByItemId?: Record<string, number>;
 }
 
-// FR-014 ("Not fetched yet" state) and FR-010 (per-row delete, with an alert-aware warning
-// once alertCountByItemId is available - docs/architecture.md's Screens & API Calls table
-// places this action on the same component that shows rates).
+// Shows a "Not fetched yet" state for items with no rate yet, and a per-row delete action
+// with an alert-aware warning once alertCountByItemId is available.
 export function RateTable({ items, onRemoveItem, alertCountByItemId }: RateTableProps) {
-  // specs/006-fix-ui-loading-bugs FR-004 - busy-tracks only the row being removed (mirrors
-  // AlertList's `evaluating` pattern) so a second click on the same row can't fire a duplicate
-  // DELETE, while other rows stay independently interactive.
+  // Busy-tracks only the row being removed (mirrors AlertList's `evaluating` pattern) so a
+  // second click on the same row can't fire a duplicate DELETE, while other rows stay
+  // independently interactive.
   const [removingItemId, setRemovingItemId] = useState<string | null>(null);
 
   const handleRemove = async (item: WatchlistItemDetail) => {

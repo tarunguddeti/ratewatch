@@ -8,13 +8,12 @@ interface WatchlistCardProps {
   onDelete: (id: string) => Promise<void>;
 }
 
-// FR-003 (select-to-navigate) and FR-004/SC-006 (delete confirmation naming what will be
-// removed) - itemCount/alertRuleCount on the Watchlist DTO exist specifically so this
-// confirmation can be shown here, on the overview page, without an extra call per card
-// (contracts/api-contracts.md).
+// Click-to-navigate, plus a delete confirmation naming what will be removed -
+// itemCount/alertRuleCount on the Watchlist DTO exist specifically so this confirmation can be
+// shown here, on the overview page, without an extra call per card.
 export function WatchlistCard({ watchlist, onDelete }: WatchlistCardProps) {
-  // specs/006-fix-ui-loading-bugs FR-003 - busy-tracks this card's own delete request (mirrors
-  // RefreshRatesButton's `refreshing` pattern) so a second click can't fire a duplicate DELETE.
+  // Busy-tracks this card's own delete request (mirrors RefreshRatesButton's `refreshing`
+  // pattern) so a second click can't fire a duplicate DELETE.
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {

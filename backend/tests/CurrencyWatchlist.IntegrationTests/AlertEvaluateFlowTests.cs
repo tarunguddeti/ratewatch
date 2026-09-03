@@ -30,7 +30,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateAlert_EvaluateTriggered_WithNoPriorRefresh()
     {
         // FakeFrankfurterHandler's USD/AUD rate is 1.5 - an "Above 1.0" rule must trigger,
-        // and this happens with no /api/rates/refresh call anywhere in this test (FR-020).
+        // and this happens with no /api/rates/refresh call anywhere in this test.
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
         var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.Above, 1.0m));
@@ -44,7 +44,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
         result!.Triggered.Should().BeTrue();
         result.CurrentRate.Should().Be(1.5m);
 
-        // FR-021 - evaluation must have upserted the pair's latest rate as a side effect.
+        // Evaluation must have upserted the pair's latest rate as a side effect.
         var latest = await _client.GetFromJsonAsync<RateSnapshotDto>("/api/rates/latest?base=USD&quote=AUD");
         latest!.Rate.Should().Be(1.5m);
     }
@@ -66,8 +66,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     public async Task CreateAlert_InclusiveCondition_TriggersWhenRateExactlyEqualsThreshold()
     {
         // FakeFrankfurterHandler's USD/AUD rate is 1.5 - an "AboveOrEqual 1.5" rule must
-        // trigger even though the same rate/threshold pair would not trigger a strict "Above"
-        // (specs/007-inclusive-alert-conditions).
+        // trigger even though the same rate/threshold pair would not trigger a strict "Above".
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
         var createRule = await _client.PostAsJsonAsync("/api/alerts", new CreateAlertRuleRequest(itemId, AlertCondition.AboveOrEqual, 1.5m));
@@ -95,7 +94,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
         var above = await aboveCreate.Content.ReadFromJsonAsync<AlertRuleDto>();
         var below = await belowCreate.Content.ReadFromJsonAsync<AlertRuleDto>();
 
-        // FR-023 - both rules are listed for the watchlist.
+        // Both rules are listed for the watchlist.
         var list = await _client.GetFromJsonAsync<List<AlertRuleDto>>($"/api/alerts?watchlistId={watchlistId}");
         list.Should().HaveCount(2).And.Contain(r => r.Id == above!.Id).And.Contain(r => r.Id == below!.Id);
 
@@ -106,17 +105,16 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
         belowResult!.Triggered.Should().BeFalse();
     }
 
-    // Shape-check rejections (specs/003-dataannotations-validation - User Story 1).
+    // Shape-check rejections.
 
     [Fact]
     public async Task CreateAlert_InvalidCondition_Returns400WithSpecificDetail()
     {
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
-        // Condition is now AlertCondition (specs/004-strong-typing-cleanup), so an invalid
-        // value can no longer be expressed via the strongly-typed CreateAlertRuleRequest
-        // constructor at all - send it as raw JSON to exercise the deserialization-time
-        // rejection path directly (research.md decision 2).
+        // Condition is now AlertCondition, so an invalid value can no longer be expressed via
+        // the strongly-typed CreateAlertRuleRequest constructor at all - send it as raw JSON
+        // to exercise the deserialization-time rejection path directly.
         var response = await _client.PostAsJsonAsync(
             "/api/alerts",
             new { watchlistItemId = itemId, condition = "Sideways", threshold = 1.5m });
@@ -133,8 +131,7 @@ public class AlertEvaluateFlowTests : IClassFixture<CustomWebApplicationFactory>
     {
         // Regression test: System.Text.Json's built-in JsonStringEnumConverter matches enum
         // names case-insensitively on read, which would have silently accepted "above" - found
-        // live during quickstart verification, not caught by any test until this one
-        // (specs/004-strong-typing-cleanup/research.md decision 1).
+        // live during manual verification, not caught by any test until this one.
         var (_, itemId) = await CreateWatchlistItemAsync("USD", "AUD");
 
         var response = await _client.PostAsJsonAsync(

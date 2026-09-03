@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 import type { Watchlist, WatchlistDetail, WatchlistItem } from "../types/domain";
 
 // The single source every path below is built from, instead of each independently restating
-// "/api/watchlists" (specs/004-strong-typing-cleanup/research.md decision 7).
+// "/api/watchlists".
 const WATCHLISTS_BASE = "/api/watchlists";
 
 export const watchlistsApi = {

@@ -4,6 +4,7 @@ using CurrencyWatchlist.Application.Repositories;
 using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace CurrencyWatchlist.UnitTests.Services;
@@ -13,6 +14,7 @@ public class WatchlistItemServiceTests
     private readonly Mock<IWatchlistRepository> _watchlistRepo = new();
     private readonly Mock<IWatchlistItemRepository> _itemRepo = new();
     private readonly Mock<IRateProvider> _rateProvider = new();
+    private readonly Mock<ILogger<WatchlistItemService>> _logger = new();
     private readonly WatchlistItemService _sut;
     private readonly Watchlist _watchlist = new() { Id = Guid.NewGuid(), Name = "Travel Fund" };
 
@@ -21,7 +23,7 @@ public class WatchlistItemServiceTests
 
     public WatchlistItemServiceTests()
     {
-        _sut = new WatchlistItemService(_watchlistRepo.Object, _itemRepo.Object, _rateProvider.Object);
+        _sut = new WatchlistItemService(_watchlistRepo.Object, _itemRepo.Object, _rateProvider.Object, _logger.Object);
         _watchlistRepo.Setup(r => r.GetByIdAsync(_watchlist.Id, It.IsAny<CancellationToken>())).ReturnsAsync(_watchlist);
     }
 
@@ -39,8 +41,8 @@ public class WatchlistItemServiceTests
     public async Task AddItemAsync_BaseEqualsQuote_ThrowsValidationException()
     {
         // Load-bearing on v2: the provider itself returns 200/rate 1.0 for a same-currency
-        // pair rather than rejecting it (docs/architecture.md:1046) - this guard must fire
-        // before the provider is ever consulted.
+        // pair rather than rejecting it - this guard must fire before the provider is ever
+        // consulted.
         var act = () => _sut.AddItemAsync(_watchlist.Id, "usd", "USD", CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>();
@@ -61,8 +63,8 @@ public class WatchlistItemServiceTests
     [Fact]
     public async Task AddItemAsync_CurrencyListUnavailable_PropagatesFailClosed()
     {
-        // FR-008 - validation fails closed, never open. No try/catch should swallow this;
-        // an unverifiable currency is never treated as valid.
+        // Validation fails closed, never open. No try/catch should swallow this; an
+        // unverifiable currency is never treated as valid.
         _rateProvider
             .Setup(p => p.GetSupportedCurrenciesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new RateProviderUnavailableException("down"));
@@ -95,6 +97,16 @@ public class WatchlistItemServiceTests
         result.BaseCurrency.Should().Be("USD");
         result.QuoteCurrency.Should().Be("AUD");
         _itemRepo.Verify(r => r.AddAsync(It.Is<WatchlistItem>(i => i.BaseCurrency == "USD" && i.QuoteCurrency == "AUD"), It.IsAny<CancellationToken>()), Times.Once);
+
+        // A successful add leaves an Information-level log entry.
+        _logger.Verify(
+            l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
     }
 
     [Fact]

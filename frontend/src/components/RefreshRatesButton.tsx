@@ -8,10 +8,9 @@ interface RefreshRatesButtonProps {
   onRefreshed: (summary: RefreshSummary) => void;
 }
 
-// FR-011 - global across all watchlists, placed on both screens with the identical caption
-// stating its real scope (docs/architecture.md's Frontend & UX decisions: "Both instances
-// carry the same short caption ... so wherever it's clicked from, its real scope is stated
-// up front instead of discovered as a surprise").
+// Global across all watchlists, placed on both screens with the identical caption stating its
+// real scope, so wherever it's clicked from, its real scope is stated up front instead of
+// discovered as a surprise.
 export function RefreshRatesButton({ onRefreshed }: RefreshRatesButtonProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);

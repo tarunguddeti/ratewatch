@@ -7,10 +7,9 @@ interface CurrencySelectProps {
   onChange: (code: string) => void;
 }
 
-// Dropdown-only, no text-input fallback (FR-006) - the only way a currency reaches the
-// backend is by being selected from this list. If the list can't load, adding a pair is
-// simply unavailable until Retry succeeds (docs/architecture.md's Currency Validation
-// decisions).
+// Dropdown-only, no text-input fallback - the only way a currency reaches the backend is by
+// being selected from this list. If the list can't load, adding a pair is simply unavailable
+// until Retry succeeds.
 export function CurrencySelect({ label, value, onChange }: CurrencySelectProps) {
   const { data, loading, error, retry } = useCurrencies();
 

@@ -5,7 +5,7 @@ namespace CurrencyWatchlist.Application.Repositories;
 public interface IWatchlistRepository
 {
     /// <summary>Includes Items and each item's AlertRules, so the caller can project
-    /// item/alert-rule counts (FR-004/SC-006) without a second round trip.</summary>
+    /// item/alert-rule counts without a second round trip.</summary>
     Task<IReadOnlyList<Watchlist>> GetAllAsync(CancellationToken ct);
 
     /// <summary>Includes Items and each item's AlertRules - the join against latest rates

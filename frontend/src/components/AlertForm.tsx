@@ -9,13 +9,12 @@ interface AlertFormProps {
 }
 
 // The smallest positive value the backend's 6-decimal-place storage scale (HasPrecision(18, 6))
-// can represent - matches the backend's exclusive-of-zero threshold rule at the UI layer
-// (specs/004-strong-typing-cleanup).
+// can represent - matches the backend's exclusive-of-zero threshold rule at the UI layer.
 const MIN_THRESHOLD_INPUT = "0.000001";
 
-// FR-017 - condition (Above/Below/AboveOrEqual/BelowOrEqual, specs/007-inclusive-alert-conditions)
-// + a positive threshold. Client-side validation here is a UX shortcut only, to save a round
-// trip - the backend re-validates everything regardless (docs/architecture.md:333).
+// Condition (Above/Below/AboveOrEqual/BelowOrEqual) + a positive threshold. Client-side
+// validation here is a UX shortcut only, to save a round trip - the backend re-validates
+// everything regardless.
 export function AlertForm({ items, onCreate }: AlertFormProps) {
   const [watchlistItemId, setWatchlistItemId] = useState("");
   const [condition, setCondition] = useState<AlertCondition>("Above");

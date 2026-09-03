@@ -15,8 +15,8 @@ function mockFetchSequence(...responses: { status: number; body: unknown }[]) {
   return fn;
 }
 
-// NFR-002 - every failure gets a specific, actionable message via one of three treatments,
-// never a generic catch-all (docs/architecture.md's Frontend error shape).
+// Every failure gets a specific, actionable message via one of three treatments, never a
+// generic catch-all.
 describe("the three ApiError-driven UI treatments", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

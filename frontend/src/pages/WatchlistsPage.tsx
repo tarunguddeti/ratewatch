@@ -4,8 +4,7 @@ import { CreateWatchlistForm } from "../components/CreateWatchlistForm";
 import { RefreshRatesButton } from "../components/RefreshRatesButton";
 import styles from "./WatchlistsPage.module.css";
 
-// FR-001/002/003/004/011. Refresh here is the convenience placement - the required one is on
-// WatchlistDetailPage (docs/architecture.md's Frontend & UX decisions).
+// Refresh here is a convenience placement - the primary one is on WatchlistDetailPage.
 export function WatchlistsPage() {
   const { data, loading, mutating, error, create, remove, refetch, reloadAfterRefresh } = useWatchlists();
 

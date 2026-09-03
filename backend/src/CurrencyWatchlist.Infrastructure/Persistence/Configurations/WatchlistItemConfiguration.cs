@@ -13,7 +13,7 @@ public class WatchlistItemConfiguration : IEntityTypeConfiguration<WatchlistItem
         builder.Property(i => i.BaseCurrency).IsRequired().HasMaxLength(CurrencyCode.Length);
         builder.Property(i => i.QuoteCurrency).IsRequired().HasMaxLength(CurrencyCode.Length);
 
-        // FR-007: the same pair can't be tracked twice in the same watchlist.
+        // The same pair can't be tracked twice in the same watchlist.
         builder.HasIndex(i => new { i.WatchlistId, i.BaseCurrency, i.QuoteCurrency }).IsUnique();
 
         builder.HasMany(i => i.AlertRules)

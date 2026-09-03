@@ -14,8 +14,8 @@ function mockFetchOnce(status: number, body: unknown) {
   );
 }
 
-// NFR-001 - every hook exposes { data, loading, error }, starting loading, then resolving to
-// either data or error, never leaving the consumer without a way to render an in-progress state.
+// Every hook exposes { data, loading, error }, starting loading, then resolving to either data
+// or error, never leaving the consumer without a way to render an in-progress state.
 describe("useWatchlists - the { data, loading, error } contract", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -62,9 +62,9 @@ describe("useWatchlists - the { data, loading, error } contract", () => {
   });
 });
 
-// specs/006-fix-ui-loading-bugs FR-001/FR-002 - create/remove (and the refresh reload) must
-// track their own `mutating` flag, not the page-level `loading` flag, so the already-rendered
-// list never gets blanked back to a full-page loading state during a routine action.
+// create/remove (and the refresh reload) must track their own `mutating` flag, not the
+// page-level `loading` flag, so the already-rendered list never gets blanked back to a
+// full-page loading state during a routine action.
 describe("useWatchlists - mutating tracks create/remove without touching loading", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -117,8 +117,8 @@ describe("useWatchlists - mutating tracks create/remove without touching loading
   });
 });
 
-// specs/006-fix-ui-loading-bugs FR-001 - same contract for the detail hook: addItem/removeItem
-// and the refresh-triggered reload use `mutating`, never the page-level `loading` flag.
+// Same contract for the detail hook: addItem/removeItem and the refresh-triggered reload use
+// `mutating`, never the page-level `loading` flag.
 describe("useWatchlistDetail - mutating tracks addItem/removeItem/reloadAfterRefresh without touching loading", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

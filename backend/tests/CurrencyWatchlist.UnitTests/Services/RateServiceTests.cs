@@ -4,6 +4,7 @@ using CurrencyWatchlist.Application.Repositories;
 using CurrencyWatchlist.Application.Services;
 using CurrencyWatchlist.Domain.Entities;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace CurrencyWatchlist.UnitTests.Services;
@@ -13,18 +14,29 @@ public class RateServiceTests
     private readonly Mock<IWatchlistItemRepository> _itemRepo = new();
     private readonly Mock<IRateSnapshotRepository> _rateSnapshotRepo = new();
     private readonly Mock<IRateProvider> _rateProvider = new();
+    private readonly Mock<ILogger<RateService>> _logger = new();
     private readonly RateService _sut;
 
     public RateServiceTests()
     {
-        _sut = new RateService(_itemRepo.Object, _rateSnapshotRepo.Object, _rateProvider.Object);
+        _sut = new RateService(_itemRepo.Object, _rateSnapshotRepo.Object, _rateProvider.Object, _logger.Object);
     }
+
+    private void VerifyLog(LogLevel level, Times times) =>
+        _logger.Verify(
+            l => l.Log(
+                level,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => true),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            times);
 
     [Fact]
     public async Task RefreshAllAsync_OneQuoteFailsUnderABase_OthersStillSucceed()
     {
-        // FR-012 - a refresh must treat each pair independently; one failure must never
-        // prevent other pairs in the same batch from succeeding and being saved.
+        // A refresh must treat each pair independently; one failure must never prevent other
+        // pairs in the same batch from succeeding and being saved.
         _itemRepo
             .Setup(r => r.GetDistinctPairsGroupedByBaseAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, List<string>> { ["USD"] = new() { "AUD", "ZZZ" } });
@@ -42,14 +54,17 @@ public class RateServiceTests
         summary.Refreshed.Should().ContainSingle(r => r.QuoteCurrency == "AUD");
         summary.Failed.Should().ContainSingle(f => f.Pair == "USD/ZZZ");
         _rateSnapshotRepo.Verify(r => r.UpsertAsync("USD", "AUD", 1.5m, It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<CancellationToken>()), Times.Once);
+
+        // A refresh always logs a completion summary, regardless of whether the failure came
+        // from the fetch stage or the write stage.
+        VerifyLog(LogLevel.Information, Times.Once());
     }
 
     [Fact]
     public async Task RefreshAllAsync_UpsertThrows_LandsInFailedWithoutLosingOthers()
     {
         // A write failure must land in failed[] exactly like a fetch failure, not silently
-        // discard other already-fetched results still waiting to be saved
-        // (docs/architecture.md:1075).
+        // discard other already-fetched results still waiting to be saved.
         _itemRepo
             .Setup(r => r.GetDistinctPairsGroupedByBaseAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Dictionary<string, List<string>> { ["USD"] = new() { "AUD", "EUR" } });
@@ -70,6 +85,10 @@ public class RateServiceTests
 
         summary.Failed.Should().ContainSingle(f => f.Pair == "USD/AUD");
         summary.Refreshed.Should().ContainSingle(r => r.QuoteCurrency == "EUR");
+
+        // A per-pair write failure must leave a Warning-level log entry naming the pair, not
+        // just land silently in failed[].
+        VerifyLog(LogLevel.Warning, Times.Once());
     }
 
     [Fact]
