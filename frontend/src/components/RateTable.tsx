@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { WatchlistItemDetail } from "../types/domain";
 import styles from "./RateTable.module.css";
 
@@ -13,15 +14,26 @@ interface RateTableProps {
 // once alertCountByItemId is available - docs/architecture.md's Screens & API Calls table
 // places this action on the same component that shows rates).
 export function RateTable({ items, onRemoveItem, alertCountByItemId }: RateTableProps) {
-  const handleRemove = (item: WatchlistItemDetail) => {
+  // specs/006-fix-ui-loading-bugs FR-004 - busy-tracks only the row being removed (mirrors
+  // AlertList's `evaluating` pattern) so a second click on the same row can't fire a duplicate
+  // DELETE, while other rows stay independently interactive.
+  const [removingItemId, setRemovingItemId] = useState<string | null>(null);
+
+  const handleRemove = async (item: WatchlistItemDetail) => {
     const alertCount = alertCountByItemId?.[item.id] ?? 0;
     const message =
       alertCount > 0
         ? `Remove ${item.baseCurrency}/${item.quoteCurrency}? This also removes ${alertCount} alert rule(s) on this pair.`
         : `Remove ${item.baseCurrency}/${item.quoteCurrency} from this watchlist?`;
 
-    if (window.confirm(message)) {
-      void onRemoveItem(item.id);
+    if (!window.confirm(message)) {
+      return;
+    }
+    setRemovingItemId(item.id);
+    try {
+      await onRemoveItem(item.id);
+    } finally {
+      setRemovingItemId(null);
     }
   };
 
@@ -53,8 +65,13 @@ export function RateTable({ items, onRemoveItem, alertCountByItemId }: RateTable
                 )}
               </td>
               <td>
-                <button type="button" className={styles.removeButton} onClick={() => handleRemove(item)}>
-                  Remove
+                <button
+                  type="button"
+                  className={styles.removeButton}
+                  onClick={() => void handleRemove(item)}
+                  disabled={removingItemId === item.id}
+                >
+                  {removingItemId === item.id ? "Removing…" : "Remove"}
                 </button>
               </td>
             </tr>
