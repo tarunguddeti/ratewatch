@@ -14,4 +14,6 @@ public enum AlertCondition
 {
     Above,
     Below,
+    AboveOrEqual,
+    BelowOrEqual,
 }
